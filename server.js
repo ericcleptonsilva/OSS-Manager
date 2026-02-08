@@ -4,14 +4,14 @@ const app = express();
 
 const PORT = process.env.PORT || 8080;
 
-// Serve os arquivos da pasta 'dist' (onde o Vite gera o build)
-app.use(express.static(path.join(__citation__)));
+// Serve os arquivos da pasta 'dist' (padrão do Vite)
+app.use(express.static(path.join(__dirname, 'dist')));
 
-// Garante que qualquer rota caia no index.html (importante para React Router)
+// Redireciona todas as rotas para o index.html (essencial para SPAs)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__citation__));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Cliente rodando na porta ${PORT}`);
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
