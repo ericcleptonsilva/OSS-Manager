@@ -13,7 +13,7 @@ interface UiPreferences {
   lastAcademyId?: string | null;
 }
 
-type UserRole = 'admin' | 'student';
+type UserRole = 'admin' | 'student' | 'professor';
 
 const App = () => {
   // --- State ---
@@ -94,14 +94,22 @@ const App = () => {
     if (currentUser) {
       setIsAuthenticated(true);
       const email = currentUser.get('email') || '';
-      checkUserRoleAndLoadData(email);
+      // Parse User standard is usually admin or we need to fetch role from it if we extend it.
+      // For now, assume Parse User implies Admin unless we store role in DB for standard users too.
+      // But in our custom flow, we use 'role' on the object.
+      let role = currentUser.get('role') as UserRole;
+      if (!role) {
+          // Default to Admin for standard Parse Users (Owners) if no role is explicitly set
+          role = 'admin';
+      }
+      checkUserRoleAndLoadData(email, role);
     } else {
         // Check local custom session
         const storedSession = localStorage.getItem('oss_custom_session');
         if (storedSession) {
             const session = JSON.parse(storedSession);
             setIsAuthenticated(true);
-            checkUserRoleAndLoadData(session.email);
+            checkUserRoleAndLoadData(session.email, session.role);
         }
     }
   }, []);
@@ -153,23 +161,36 @@ const App = () => {
 
   // --- Actions ---
 
-  const checkUserRoleAndLoadData = (email: string) => {
+  const checkUserRoleAndLoadData = (email: string, explicitRole?: UserRole) => {
       setIsAuthenticated(true);
       
       ParseService.fetchFullData().then(fetchedData => {
           setData(fetchedData);
+
+          // 1. Try to find if it is a student
           const studentFound = fetchedData.students.find(s => s.email.toLowerCase() === email.toLowerCase());
           
-          if (studentFound) {
+          if (studentFound && (!explicitRole || explicitRole === 'student')) {
               setUserRole('student');
               setCurrentUserId(studentFound.id);
               setSelectedAcademyId(studentFound.academyId);
               setSelectedStudentId(studentFound.id);
               showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
           } else {
-              setUserRole('admin');
+              // 2. Not a student, check explicit role
+              if (explicitRole) {
+                  setUserRole(explicitRole);
+              } else {
+                  // Fallback default
+                  setUserRole('admin');
+              }
               setCurrentUserId(null);
-              showNotification(`Bem-vindo, Admin!`);
+
+              if (explicitRole === 'professor') {
+                   showNotification(`Bem-vindo, Professor!`);
+              } else {
+                   showNotification(`Bem-vindo, Admin!`);
+              }
           }
       });
   };
@@ -181,16 +202,22 @@ const App = () => {
         // Fluxo de Login Customizado (Parse User OU Team Admin OU Academy Professor)
         const user = await ParseService.performCustomLogin(loginEmail, loginPassword);
 
+        let role = user.get('role') as UserRole;
+        if (!role) {
+             // If no role field (Standard Parse User), assume Admin
+             role = 'admin';
+        }
+
         // Persist session locally for non-Parse users (Mock users)
         if (!user.getSessionToken()) {
             localStorage.setItem('oss_custom_session', JSON.stringify({
                 email: user.get('email'),
-                role: user.id === 'admin-user' ? 'admin' : 'student',
+                role: role,
                 userId: user.id
             }));
         }
 
-        checkUserRoleAndLoadData(loginEmail);
+        checkUserRoleAndLoadData(loginEmail, role);
         setIsLoginModalOpen(false);
 
         if (loginTargetAcademyId) {
@@ -410,11 +437,48 @@ const App = () => {
       if (!targetAcademy) return;
 
       if (isAuthenticated) {
-          const currentUserEmail = ParseService.getCurrentUser()?.get('email');
-          // Check access permission
+          // If admin, always allow
+          if (userRole === 'admin') {
+              handleSelectAcademy(academyId);
+              return;
+          }
+
+          // If student, check if it is THEIR academy
+          if (userRole === 'student') {
+              if (selectedAcademyId === academyId) {
+                  // Already there or allowed
+                  handleSelectAcademy(academyId);
+              } else {
+                   alert("Você só tem acesso à sua academia.");
+              }
+              return;
+          }
+
+          // If professor, check allowedEmails
+          // Note: We need the email from session or state.
+          // We can use loginEmail state if it persists, or better, get from LocalStorage or Parse User
+          const currentUser = ParseService.getCurrentUser();
+          let currentUserEmail = currentUser?.get('email');
+
+          if (!currentUserEmail) {
+             const stored = localStorage.getItem('oss_custom_session');
+             if (stored) {
+                 currentUserEmail = JSON.parse(stored).email;
+             }
+          }
+
           if (targetAcademy.allowedEmails && targetAcademy.allowedEmails.length > 0) {
-              if (!currentUserEmail || !targetAcademy.allowedEmails.includes(currentUserEmail)) {
-                  alert("Acesso Negado: Seu email não tem permissão para gerenciar esta academia.");
+              // Normalize emails for case-insensitive comparison
+              const normalizedAllowed = targetAcademy.allowedEmails.map(e => e.toLowerCase());
+              const normalizedCurrent = currentUserEmail ? currentUserEmail.toLowerCase() : '';
+
+              if (!normalizedCurrent || !normalizedAllowed.includes(normalizedCurrent)) {
+                  // If denied, maybe they want to login as the professor for THIS academy?
+                  // Prompt login
+                  if (confirm("Você não tem permissão para esta academia com o usuário atual. Deseja fazer login com outra conta?")) {
+                      setLoginTargetAcademyId(academyId);
+                      setIsLoginModalOpen(true);
+                  }
                   return;
               }
           }
@@ -862,8 +926,8 @@ const App = () => {
                     </button>
                     )}
 
-                    {/* Admin Navigation */}
-                    {selectedAcademyId && !selectedStudentId && userRole === 'admin' && (
+                    {/* Admin/Professor Navigation */}
+                    {selectedAcademyId && !selectedStudentId && (userRole === 'admin' || userRole === 'professor') && (
                     <button
                         onClick={handleBackToAcademies}
                         className="md:hidden text-gray-300 hover:text-white"
@@ -872,8 +936,8 @@ const App = () => {
                     </button>
                     )}
 
-                    {/* Admin Student Detail Navigation */}
-                    {selectedStudentId && userRole === 'admin' && (
+                    {/* Admin/Professor Student Detail Navigation */}
+                    {selectedStudentId && (userRole === 'admin' || userRole === 'professor') && (
                         <button
                         onClick={() => setSelectedStudentId(null)}
                         className="md:hidden text-gray-300 hover:text-white"
@@ -901,8 +965,8 @@ const App = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         
-        {/* View 1: Team Dashboard (List of Academies) - PUBLIC & ADMIN */}
-        {!selectedAcademyId && !selectedStudentId && (userRole === 'admin' || !isAuthenticated) && (
+        {/* View 1: Team Dashboard (List of Academies) - PUBLIC & ADMIN & PROFESSOR */}
+        {!selectedAcademyId && !selectedStudentId && (userRole === 'admin' || userRole === 'professor' || !isAuthenticated) && (
           <div className="space-y-8 animate-fade-in">
             <div className="flex justify-between items-end">
               <div>
@@ -976,8 +1040,8 @@ const App = () => {
           </div>
         )}
 
-        {/* View 2: Academy Detail - ADMIN ONLY */}
-        {selectedAcademy && !selectedStudentId && userRole === 'admin' && (
+        {/* View 2: Academy Detail - ADMIN & PROFESSOR */}
+        {selectedAcademy && !selectedStudentId && (userRole === 'admin' || userRole === 'professor') && (
           <div className="space-y-8 animate-fade-in">
             
             {/* Breadcrumb / Back */}
@@ -1017,6 +1081,7 @@ const App = () => {
                         >
                           <IconEdit className="w-6 h-6" />
                         </button>
+                        {userRole === 'admin' && (
                         <button 
                           onClick={() => setIsDeleteModalOpen(true)}
                           className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded-full hover:bg-red-50 hover:bg-opacity-10"
@@ -1024,6 +1089,7 @@ const App = () => {
                         >
                           <IconTrash className="w-6 h-6" />
                         </button>
+                        )}
                       </div>
                     </div>
                     
@@ -1648,7 +1714,7 @@ const App = () => {
         {/* View 3: Student Profile (Read Only History or Admin View) */}
         {selectedStudent && (
             <div className="space-y-8 animate-fade-in">
-                 {userRole === 'admin' && (
+                 {(userRole === 'admin' || userRole === 'professor') && (
                     <button 
                         onClick={() => setSelectedStudentId(null)}
                         className="flex items-center text-gray-500 hover:text-jiu-primary transition-colors mb-4"
@@ -1691,7 +1757,7 @@ const App = () => {
                                             <div 
                                                 key={d} 
                                                 onClick={() => handleUpdateStudentDegree(selectedStudent.id, d)}
-                                                className={`w-2 h-6 border border-gray-400 ${selectedStudent.degrees && selectedStudent.degrees >= d ? 'bg-white' : 'bg-transparent'} ${userRole === 'admin' ? 'cursor-pointer hover:bg-white/50' : ''}`}
+                                                className={`w-2 h-6 border border-gray-400 ${selectedStudent.degrees && selectedStudent.degrees >= d ? 'bg-white' : 'bg-transparent'} ${(userRole === 'admin' || userRole === 'professor') ? 'cursor-pointer hover:bg-white/50' : ''}`}
                                             ></div>
                                         ))}
                                     </div>

@@ -457,6 +457,7 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
                 mockUser.id = 'admin-user';
                 mockUser.set('email', teamEmail);
                 mockUser.set('username', 'Admin');
+                mockUser.set('role', 'admin'); // Set role
                 // Fake Session
                 return mockUser;
             }
@@ -480,6 +481,7 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
                  mockUser.set('email', email);
                  mockUser.set('username', academy.get('instructorName') || 'Professor');
                  mockUser.set('academyId', academy.id); // Custom field to track context
+                 mockUser.set('role', 'professor'); // Set role
                  return mockUser;
             }
         }
