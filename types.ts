@@ -36,6 +36,7 @@ export enum FinancialType {
 export interface TrainingMedia {
   type: 'image' | 'video';
   data: string; // Base64
+  isPublic?: boolean;
 }
 
 export interface TrainingSession {
@@ -104,6 +105,7 @@ export interface Team {
   name: string;
   description: string;
   logo?: string;
+  banner?: string;
   adminEmail?: string;
   adminPassword?: string;
 }
