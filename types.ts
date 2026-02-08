@@ -70,6 +70,8 @@ export interface Student {
   degrees: number; // 0 a 4 graus
   academyId: string;
   photo?: string; // Base64 da foto do aluno
+  password?: string; // Senha para login do aluno
+  progressStars?: number; // 0-5 para evolução até o próximo grau
   // Dados do Responsável (se menor de idade)
   guardianName?: string;
   guardianPhone?: string;

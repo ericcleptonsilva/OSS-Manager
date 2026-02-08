@@ -57,6 +57,8 @@ const mapStudent = (obj: Parse.Object): Student => ({
   degrees: obj.get('degrees'),
   academyId: obj.get('academy') ? obj.get('academy').id : '',
   photo: obj.get('photo'),
+  password: obj.get('password'),
+  progressStars: obj.get('progressStars') || 0,
   guardianName: obj.get('guardianName'),
   guardianPhone: obj.get('guardianPhone'),
   guardianCpf: obj.get('guardianCpf'),
@@ -292,6 +294,8 @@ export const saveStudent = async (studentData: Partial<Student>) => {
   student.set('belt', studentData.belt);
   student.set('degrees', studentData.degrees);
   student.set('photo', studentData.photo);
+  if (studentData.password) student.set('password', studentData.password);
+  if (studentData.progressStars !== undefined) student.set('progressStars', studentData.progressStars);
   student.set('guardianName', studentData.guardianName);
   student.set('guardianPhone', studentData.guardianPhone);
   student.set('guardianCpf', studentData.guardianCpf);
@@ -509,6 +513,22 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
                  mockUser.set('role', 'professor'); // Set role
                  return mockUser;
             }
+        }
+
+        // 4. Try Student Login
+        const studentQuery = new Parse.Query('Student');
+        studentQuery.equalTo('email', email);
+        studentQuery.equalTo('password', pass);
+        const student = await studentQuery.first();
+
+        if (student) {
+             const mockUser = new Parse.User();
+             mockUser.id = student.id; // Use real student ID
+             mockUser.set('email', student.get('email'));
+             mockUser.set('username', student.get('name'));
+             mockUser.set('academyId', student.get('academy')?.id);
+             mockUser.set('role', 'student');
+             return mockUser;
         }
 
         // If nothing matches
