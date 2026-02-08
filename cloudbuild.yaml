@@ -1,5 +1,11 @@
 steps:
+# Exemplo para apenas listar os arquivos e garantir que ele achou o repo
+- name: 'ubuntu'
+  args: ['ls', '-la']
+
+# Exemplo de build simples (se for usar Docker)
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/minha-imagem', '.']
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/oss-manager-image', '.']
+
 images:
-- 'gcr.io/$PROJECT_ID/minha-imagem'
+- 'gcr.io/$PROJECT_ID/oss-manager-image'
