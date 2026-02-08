@@ -1898,49 +1898,48 @@ const App = () => {
                     {/* Profile Sidebar */}
                     <div className="space-y-6">
                         <div className={`rounded-xl shadow-md overflow-hidden border ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
-                             <div 
-                                className="h-32 w-full flex items-center justify-center relative"
-                                style={{ 
-                                    background: BELT_STYLES[selectedStudent.belt]?.background || '#f3f4f6',
-                                }}
-                             >
-                                <div className="absolute inset-0 opacity-20 bg-black"></div>
-                                
-                                {selectedStudent.photo ? (
-                                    <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg z-10 overflow-hidden">
-                                        <img src={selectedStudent.photo} alt={selectedStudent.name} className="w-full h-full object-cover" />
+                             {/* New Header Design */}
+                             <div className={`relative h-32 w-full border-b overflow-hidden ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                                <div className="flex justify-between items-center h-full px-8">
+                                    {/* Left: Avatar Area */}
+                                    <div className="relative">
+                                        {selectedStudent.photo ? (
+                                            <div className="w-24 h-24 rounded-full border-4 border-gray-100 shadow-sm overflow-hidden bg-gray-200">
+                                                <img src={selectedStudent.photo} alt={selectedStudent.name} className="w-full h-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-24 h-24 rounded-full border-4 border-gray-100 shadow-sm flex items-center justify-center bg-gray-100 text-gray-400">
+                                                <span className="text-3xl font-bold uppercase">{selectedStudent.name.charAt(0)}</span>
+                                            </div>
+                                        )}
                                     </div>
-                                ) : (
-                                    <span 
-                                        className="text-3xl font-black uppercase tracking-widest z-10"
-                                        style={{ color: BELT_STYLES[selectedStudent.belt]?.color || '#000' }}
-                                    >
-                                        {selectedStudent.belt}
-                                    </span>
-                                )}
 
-                             </div>
-                             <div className="p-6">
-                                <div className="flex justify-between items-center mb-1">
-                                    <h2 className={`text-2xl font-bold ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedStudent.name}</h2>
-                                    <div className="flex space-x-1">
-                                        {[1,2,3,4].map(d => (
+                                    {/* Right: Stripes Area (Vertical Bars) */}
+                                    <div className="flex items-center space-x-3 h-full py-4">
+                                        {[1, 2, 3, 4].map(d => (
                                             <div 
                                                 key={d} 
-                                                className={`w-2 h-6 border border-gray-400 ${selectedStudent.degrees && selectedStudent.degrees >= d ? 'bg-white' : 'bg-transparent'}`}
+                                                className={`w-3 h-full rounded-full transition-colors duration-300 ${selectedStudent.degrees && selectedStudent.degrees >= d ? 'bg-black' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                                title={`Grau ${d}`}
                                             ></div>
                                         ))}
                                     </div>
                                 </div>
-                                <p className="text-center text-gray-500 text-sm mb-6">Início: {new Date(selectedStudent.startDate).toLocaleDateString()}</p>
+                             </div>
+
+                             <div className="p-6">
+                                <div className="mb-6">
+                                    <h2 className={`text-2xl font-bold ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedStudent.name}</h2>
+                                    <p className="text-gray-500 text-sm mt-1">Início: {new Date(selectedStudent.startDate).toLocaleDateString()}</p>
+                                </div>
                                 
                                 {/* EVOLUTION / PROGRESS CARD */}
-                                <div className={`mb-6 p-4 rounded-lg border border-yellow-500/30 ${uiPrefs.darkMode ? 'bg-yellow-900/10' : 'bg-yellow-50'}`}>
-                                    <h4 className={`text-sm font-bold uppercase mb-3 text-center ${uiPrefs.darkMode ? 'text-yellow-500' : 'text-yellow-700'}`}>
+                                <div className={`mb-6 p-6 rounded-xl border border-yellow-200 ${uiPrefs.darkMode ? 'bg-yellow-900/10 border-yellow-700/30' : 'bg-yellow-50'}`}>
+                                    <h4 className={`text-sm font-bold uppercase mb-4 text-center tracking-wider ${uiPrefs.darkMode ? 'text-yellow-500' : 'text-yellow-700'}`}>
                                         Progresso do Grau
                                     </h4>
 
-                                    <div className="flex justify-center space-x-2 mb-4">
+                                    <div className="flex justify-center space-x-3 mb-4">
                                         {[1, 2, 3, 4, 5].map((star) => (
                                             <button
                                                 key={star}
