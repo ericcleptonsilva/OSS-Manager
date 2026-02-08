@@ -25,6 +25,7 @@ const mapAcademy = (obj: Parse.Object): Academy => ({
   logo: obj.get('logo'),
   schedule: obj.get('schedule') || [],
   allowedEmails: obj.get('allowedEmails') || [],
+  adminPassword: obj.get('adminPassword'),
   trainings: [], // Serão populados separadamente
   financials: [] // Serão populados separadamente
 });
@@ -150,7 +151,9 @@ export const fetchFullData = async (): Promise<AppData> => {
         id: teamObj.id,
         name: teamObj.get('name'),
         description: teamObj.get('description'),
-        logo: teamObj.get('logo')
+        logo: teamObj.get('logo'),
+        adminEmail: teamObj.get('adminEmail'),
+        adminPassword: teamObj.get('adminPassword')
       };
     } else {
       team = INITIAL_DATA.team; // Fallback
@@ -233,7 +236,9 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
         id: teamObj.id,
         name: teamObj.get('name'),
         description: teamObj.get('description'),
-        logo: teamObj.get('logo')
+        logo: teamObj.get('logo'),
+        adminEmail: teamObj.get('adminEmail'),
+        adminPassword: teamObj.get('adminPassword')
       };
     } else {
       team = INITIAL_DATA.team;
@@ -302,6 +307,9 @@ export const saveAcademy = async (academyData: Partial<Academy>) => {
   academy.set('schedule', academyData.schedule);
   if (academyData.allowedEmails) {
       academy.set('allowedEmails', academyData.allowedEmails);
+  }
+  if (academyData.adminPassword) {
+      academy.set('adminPassword', academyData.adminPassword);
   }
 
   await academy.save();
@@ -407,12 +415,79 @@ export const saveTeam = async (teamData: Partial<Team>) => {
     if (teamData.logo) {
         team.set('logo', teamData.logo);
     }
+    if (teamData.adminEmail) {
+        team.set('adminEmail', teamData.adminEmail);
+    }
+    if (teamData.adminPassword) {
+        team.set('adminPassword', teamData.adminPassword);
+    }
 
     await team.save();
     return {
         id: team.id,
         name: team.get('name'),
         description: team.get('description'),
-        logo: team.get('logo')
+        logo: team.get('logo'),
+        adminEmail: team.get('adminEmail'),
+        adminPassword: team.get('adminPassword')
     };
+};
+export const performCustomLogin = async (email: string, pass: string): Promise<Parse.User> => {
+    try {
+        // 1. Try Standard Parse Login (for real users if any)
+        try {
+            const user = await Parse.User.logIn(email, pass);
+            return user;
+        } catch (e: any) {
+            // Ignore code 101 (Invalid login) to try other methods, rethrow others
+            if (e.code !== 101) throw e;
+        }
+
+        // 2. Try Team Admin Login
+        const teamQuery = new Parse.Query('Team');
+        const team = await teamQuery.first();
+        if (team) {
+            const teamEmail = team.get('adminEmail');
+            const teamPass = team.get('adminPassword');
+
+            // Basic Check (In production, passwords should be hashed)
+            if (teamEmail && teamPass && teamEmail.toLowerCase() === email.toLowerCase() && teamPass === pass) {
+                // Return Mock Admin User
+                const mockUser = new Parse.User();
+                mockUser.id = 'admin-user';
+                mockUser.set('email', teamEmail);
+                mockUser.set('username', 'Admin');
+                // Fake Session
+                return mockUser;
+            }
+        }
+
+        // 3. Try Academy Login
+        const academyQuery = new Parse.Query('Academy');
+        // We can't query inside arrays easily for email with simple equality without knowing exact structure,
+        // so we fetch academies where this email *might* be allowed or just iterate.
+        // For security/performance in real app, use Cloud Code. Here we iterate client side safely enough for this scope.
+        const academies = await academyQuery.find();
+
+        for (const academy of academies) {
+            const allowedEmails = academy.get('allowedEmails') || [];
+            const academyPass = academy.get('adminPassword');
+
+            if (allowedEmails.includes(email) && academyPass === pass) {
+                 // Return Mock Student/Professor User
+                 const mockUser = new Parse.User();
+                 mockUser.id = `user-${academy.id}`;
+                 mockUser.set('email', email);
+                 mockUser.set('username', academy.get('instructorName') || 'Professor');
+                 mockUser.set('academyId', academy.id); // Custom field to track context
+                 return mockUser;
+            }
+        }
+
+        // If nothing matches
+        throw new Parse.Error(101, "Invalid username/password.");
+
+    } catch (error) {
+        throw error;
+    }
 };
