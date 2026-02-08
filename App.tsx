@@ -468,9 +468,9 @@ const App = () => {
           }
 
           if (targetAcademy.allowedEmails && targetAcademy.allowedEmails.length > 0) {
-              // Normalize emails for case-insensitive comparison
-              const normalizedAllowed = targetAcademy.allowedEmails.map(e => e.toLowerCase());
-              const normalizedCurrent = currentUserEmail ? currentUserEmail.toLowerCase() : '';
+              // Normalize emails for case-insensitive comparison (Trimmed & Lowercase)
+              const normalizedAllowed = targetAcademy.allowedEmails.map(e => e.trim().toLowerCase());
+              const normalizedCurrent = currentUserEmail ? currentUserEmail.trim().toLowerCase() : '';
 
               if (!normalizedCurrent || !normalizedAllowed.includes(normalizedCurrent)) {
                   // If denied, maybe they want to login as the professor for THIS academy?
