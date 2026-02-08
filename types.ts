@@ -93,6 +93,7 @@ export interface Academy {
   schedule: AcademySchedule[]; // Lista de dias e horários específicos
   description?: string;
   logo?: string;
+  allowedEmails?: string[]; // Lista de emails permitidos para gerenciar a academia
   trainings: TrainingSession[]; // Histórico de aulas da academia
   financials: FinancialTransaction[]; // Histórico financeiro
 }

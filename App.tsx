@@ -176,6 +176,16 @@ const App = () => {
         setIsLoginModalOpen(false);
 
         if (loginTargetAcademyId) {
+            const targetAcademy = data.academies.find(a => a.id === loginTargetAcademyId);
+            // Check Access after login
+            if (targetAcademy && targetAcademy.allowedEmails && targetAcademy.allowedEmails.length > 0) {
+                if (!targetAcademy.allowedEmails.includes(loginEmail)) {
+                    alert("Acesso Negado: Seu email não tem permissão para gerenciar esta academia.");
+                    setLoginTargetAcademyId(null);
+                    return;
+                }
+            }
+
             setSelectedAcademyId(loginTargetAcademyId);
             setLoginTargetAcademyId(null);
         }
@@ -306,14 +316,22 @@ const App = () => {
     setIsTeamModalOpen(true);
   };
 
-  const handleSaveTeam = (e: React.FormEvent) => {
+  const handleSaveTeam = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTeam.name) return;
-    setData(prev => ({
-      ...prev,
-      team: { ...prev.team, ...newTeam } as Team
-    }));
-    setIsTeamModalOpen(false);
+
+    try {
+        const savedTeam = await ParseService.saveTeam(newTeam);
+        setData(prev => ({
+            ...prev,
+            team: { ...prev.team, ...savedTeam }
+        }));
+        setIsTeamModalOpen(false);
+        showNotification('Configurações da equipe salvas!');
+    } catch (e) {
+        console.error(e);
+        alert("Erro ao salvar configurações da equipe.");
+    }
   };
 
   const handleSaveAcademy = async (e: React.FormEvent) => {
@@ -369,7 +387,18 @@ const App = () => {
   }
 
   const handlePublicAcademyClick = (academyId: string) => {
+      const targetAcademy = data.academies.find(a => a.id === academyId);
+      if (!targetAcademy) return;
+
       if (isAuthenticated) {
+          const currentUserEmail = ParseService.getCurrentUser()?.get('email');
+          // Check access permission
+          if (targetAcademy.allowedEmails && targetAcademy.allowedEmails.length > 0) {
+              if (!currentUserEmail || !targetAcademy.allowedEmails.includes(currentUserEmail)) {
+                  alert("Acesso Negado: Seu email não tem permissão para gerenciar esta academia.");
+                  return;
+              }
+          }
           handleSelectAcademy(academyId);
       } else {
           setLoginTargetAcademyId(academyId);
@@ -900,7 +929,24 @@ const App = () => {
                       </span>
                     </div>
                     <h3 className={`text-xl font-bold mb-1 relative z-10 ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>{academy.name}</h3>
-                    <p className={`text-sm mb-4 relative z-10 ${uiPrefs.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{academy.address}</p>
+                    <p className={`text-sm mb-2 relative z-10 ${uiPrefs.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{academy.address}</p>
+
+                    {/* Schedule on Card */}
+                    {academy.schedule && academy.schedule.length > 0 && (
+                        <div className={`text-xs mb-4 relative z-10 ${uiPrefs.darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            <p className="font-semibold mb-1 flex items-center"><IconClock className="w-3 h-3 mr-1"/> Horários:</p>
+                            {academy.schedule.map((s, idx) => (
+                                <div key={idx} className="flex justify-between max-w-[200px]">
+                                    <span className="font-medium">{s.day.substring(0, 3)}:</span>
+                                    <span>
+                                        {s.timeRanges.map(r => `${r.openTime}-${r.closeTime}`).join(', ')}
+                                    </span>
+                                </div>
+                            )).slice(0, 3)}
+                            {academy.schedule.length > 3 && <span className="italic opacity-70">...e mais</span>}
+                        </div>
+                    )}
+
                     <div className={`flex items-center text-sm border-t pt-4 relative z-10 ${uiPrefs.darkMode ? 'text-gray-300 border-gray-700' : 'text-gray-700 border-gray-100'}`}>
                       <span className="font-medium mr-2">Instrutor:</span> {academy.instructorName}
                     </div>
@@ -2200,6 +2246,18 @@ const App = () => {
               value={newAcademy.instructorName || ''}
               onChange={e => setNewAcademy({...newAcademy, instructorName: e.target.value})}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email do Professor (Acesso)</label>
+            <input
+              type="email"
+              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+              placeholder="email@professor.com"
+              value={newAcademy.allowedEmails?.[0] || ''}
+              onChange={e => setNewAcademy({...newAcademy, allowedEmails: [e.target.value]})}
+            />
+            <p className="text-xs text-gray-500 mt-1">Este email terá permissão para acessar esta academia.</p>
           </div>
           
           <div>

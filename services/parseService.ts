@@ -24,6 +24,7 @@ const mapAcademy = (obj: Parse.Object): Academy => ({
   description: obj.get('description'),
   logo: obj.get('logo'),
   schedule: obj.get('schedule') || [],
+  allowedEmails: obj.get('allowedEmails') || [],
   trainings: [], // Serão populados separadamente
   financials: [] // Serão populados separadamente
 });
@@ -299,6 +300,9 @@ export const saveAcademy = async (academyData: Partial<Academy>) => {
   academy.set('description', academyData.description);
   academy.set('logo', academyData.logo);
   academy.set('schedule', academyData.schedule);
+  if (academyData.allowedEmails) {
+      academy.set('allowedEmails', academyData.allowedEmails);
+  }
 
   await academy.save();
   // Return minimal for UI update, fetchFullData syncs perfectly later
@@ -375,4 +379,40 @@ export const deleteAllTransactionsForStudent = async (studentId: string) => {
   
   // Bulk destroy
   await Parse.Object.destroyAll(results);
+};
+
+export const saveTeam = async (teamData: Partial<Team>) => {
+    const TeamClass = Parse.Object.extend('Team');
+    let team;
+
+    // Se tiver ID, usa. Senão, tenta buscar o primeiro registro de Team (Single Team App)
+    if (teamData.id) {
+        try {
+            const query = new Parse.Query(TeamClass);
+            team = await query.get(teamData.id);
+        } catch (e) {
+             // Se não achar pelo ID, cria um novo
+             team = new TeamClass();
+        }
+    } else {
+        const query = new Parse.Query(TeamClass);
+        team = await query.first();
+        if (!team) {
+            team = new TeamClass();
+        }
+    }
+
+    team.set('name', teamData.name);
+    team.set('description', teamData.description);
+    if (teamData.logo) {
+        team.set('logo', teamData.logo);
+    }
+
+    await team.save();
+    return {
+        id: team.id,
+        name: team.get('name'),
+        description: team.get('description'),
+        logo: team.get('logo')
+    };
 };
