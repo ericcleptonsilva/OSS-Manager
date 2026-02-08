@@ -4,14 +4,20 @@ const app = express();
 
 const PORT = process.env.PORT || 8080;
 
-// Serve os arquivos da pasta 'dist' (onde o Vite gera o build)
-app.use(express.static(path.join(__citation__)));
+// Log para debug no Cloud Logging
+console.log("Iniciando servidor...");
 
-// Garante que qualquer rota caia no index.html (importante para React Router)
+// Caminho absoluto para a pasta dist
+const distPath = path.join(__dirname, 'dist');
+console.log("Servindo arquivos de:", distPath);
+
+app.use(express.static(distPath));
+
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__citation__));
+  res.sendFile(path.join(distPath, 'index.html'));
 });
 
+// IMPORTANTE: Escutar em 0.0.0.0
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Cliente rodando na porta ${PORT}`);
+  console.log(`Aplicação online na porta ${PORT}`);
 });

@@ -1,19 +1,21 @@
-FROM node:22
+FROM node:20
 
 WORKDIR /app
 
+# Copia arquivos de dependências
 COPY package*.json ./
 RUN npm install
 
+# Copia o restante e faz o build
 COPY . .
-
-# Gera os arquivos estáticos do Vite
 RUN npm run build
 
-# Instala o express para servir o build
+# Instala o express explicitamente
 RUN npm install express
 
+# Define a porta como variável (boas práticas)
+ENV PORT=8080
 EXPOSE 8080
 
-# Roda o servidor que criamos no passo 1
+# Executa o servidor
 CMD ["node", "server.js"]
