@@ -1,27 +1,35 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const distPath = join(__dirname, 'dist');
 
 const app = express();
-// O Cloud Run sempre injeta a porta 8080 na variável PORT
 const PORT = process.env.PORT || 8080;
 
-// Log para você ver no console se o servidor realmente iniciou
-console.log(`Iniciando servidor... PORT: ${PORT}`);
+// Log de diagnóstico para o Cloud Logging
+console.log(`Verificando pasta dist em: ${distPath}`);
+if (fs.existsSync(distPath)) {
+  console.log("Pasta dist encontrada com sucesso!");
+} else {
+  console.error("ERRO: Pasta dist NÃO encontrada. O build do Vite pode ter falhado ou o caminho está errado.");
+}
 
-// Serve os arquivos da pasta 'dist' gerada pelo Vite
-const distPath = join(__dirname, 'dist');
 app.use(express.static(distPath));
 
-// Fallback para SPA (React Router)
 app.get('*', (req, res) => {
-  res.sendFile(join(distPath, 'index.html'));
+  const indexPath = join(distPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send("Arquivo index.html não encontrado na pasta dist.");
+  }
 });
 
-// AQUI ESTÁ O SEGREDO: Use '0.0.0.0' explicitamente
+// ESCUTAR EM 0.0.0.0 É OBRIGATÓRIO
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor escutando em http://0.0.0.0:${PORT}`);
+  console.log(`Servidor ouvindo na porta ${PORT} no host 0.0.0.0`);
 });

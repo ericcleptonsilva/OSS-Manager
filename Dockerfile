@@ -1,21 +1,19 @@
-FROM node:20
+FROM node:20-slim
 
 WORKDIR /app
 
-# Copia arquivos de dependências
+# Instala dependências primeiro para usar cache do Docker
 COPY package*.json ./
 RUN npm install
 
-# Copia o restante e faz o build
+# Copia tudo e gera o build
 COPY . .
 RUN npm run build
 
-# Instala o express explicitamente
+# Verifica se o express está no package.json, se não, instala aqui
 RUN npm install express
 
-# Define a porta como variável (boas práticas)
-ENV PORT=8080
 EXPOSE 8080
 
-# Executa o servidor
+# Comando de inicialização
 CMD ["node", "server.js"]
