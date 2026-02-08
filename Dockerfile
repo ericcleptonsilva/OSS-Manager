@@ -10,8 +10,6 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Verifica se o express está no package.json, se não, instala aqui
-RUN npm install express
 
 EXPOSE 8080
 

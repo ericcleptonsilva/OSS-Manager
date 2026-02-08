@@ -1,22 +1,22 @@
-// Use exatamente assim para evitar o erro de porta
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const distPath = join(__dirname, 'dist');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-app.use(express.static(distPath));
+// Serve os arquivos da pasta 'dist' gerada pelo comando 'vite build'
+app.use(express.static(join(__dirname, 'dist')));
 
+// Redireciona rotas para o index.html (essencial para React Router)
 app.get('*', (req, res) => {
-  res.sendFile(join(distPath, 'index.html'));
+  res.sendFile(join(__dirname, 'dist', 'index.html'));
 });
 
-// O Cloud Run EXIGE 0.0.0.0
+// ESCUTAR EM 0.0.0.0 É OBRIGATÓRIO PARA O CLOUD RUN
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor escutando na porta ${PORT}`);
 });
