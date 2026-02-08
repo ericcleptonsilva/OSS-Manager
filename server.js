@@ -1,23 +1,21 @@
-const express = require('express');
-const path = require('path');
-const app = express();
+import express from 'express';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Log para debug no Cloud Logging
-console.log("Iniciando servidor...");
-
-// Caminho absoluto para a pasta dist
-const distPath = path.join(__dirname, 'dist');
-console.log("Servindo arquivos de:", distPath);
-
-app.use(express.static(distPath));
+// Serve os arquivos da pasta dist gerada pelo build do Vite
+app.use(express.static(join(__dirname, 'dist')));
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'));
+  res.sendFile(join(__dirname, 'dist', 'index.html'));
 });
 
-// IMPORTANTE: Escutar em 0.0.0.0
+// Escuta obrigatoriamente em 0.0.0.0 para o Cloud Run
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Aplicação online na porta ${PORT}`);
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
