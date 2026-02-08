@@ -220,6 +220,37 @@ export const fetchFullData = async (): Promise<AppData> => {
   }
 };
 
+export const fetchPublicData = async (): Promise<{ team: Team, academies: Academy[] }> => {
+  try {
+    // 1. Fetch Team
+    const teamQuery = new Parse.Query('Team');
+    const teamObj = await teamQuery.first();
+    let team: Team;
+
+    if (teamObj) {
+      team = {
+        id: teamObj.id,
+        name: teamObj.get('name'),
+        description: teamObj.get('description'),
+        logo: teamObj.get('logo')
+      };
+    } else {
+      team = INITIAL_DATA.team;
+    }
+
+    // 2. Fetch Academies (Basic Info Only)
+    const academyQuery = new Parse.Query('Academy');
+    const academyObjs = await academyQuery.find();
+    const academies = academyObjs.map(mapAcademy);
+
+    return { team, academies };
+
+  } catch (error) {
+    console.error("Erro ao buscar dados públicos:", error);
+    return { team: INITIAL_DATA.team, academies: [] };
+  }
+};
+
 // --- SAVING FUNCTIONS ---
 
 export const saveStudent = async (studentData: Partial<Student>) => {
