@@ -471,10 +471,14 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
         const academies = await academyQuery.find();
 
         for (const academy of academies) {
-            const allowedEmails = academy.get('allowedEmails') || [];
+            const allowedEmails = (academy.get('allowedEmails') || []) as string[];
             const academyPass = academy.get('adminPassword');
 
-            if (allowedEmails.includes(email) && academyPass === pass) {
+            // Normalized check (case insensitive & trimmed)
+            const normalizedInputEmail = email.trim().toLowerCase();
+            const isEmailAllowed = allowedEmails.some(e => e.trim().toLowerCase() === normalizedInputEmail);
+
+            if (isEmailAllowed && academyPass === pass) {
                  // Return Mock Student/Professor User
                  const mockUser = new Parse.User();
                  mockUser.id = `user-${academy.id}`;
