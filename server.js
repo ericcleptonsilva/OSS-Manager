@@ -4,14 +4,20 @@ const app = express();
 
 const PORT = process.env.PORT || 8080;
 
-// Serve os arquivos da pasta 'dist' (padrão do Vite)
-app.use(express.static(path.join(__dirname, 'dist')));
+// Log para debug no Cloud Logging
+console.log("Iniciando servidor...");
 
-// Redireciona todas as rotas para o index.html (essencial para SPAs)
+// Caminho absoluto para a pasta dist
+const distPath = path.join(__dirname, 'dist');
+console.log("Servindo arquivos de:", distPath);
+
+app.use(express.static(distPath));
+
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(distPath, 'index.html'));
 });
 
+// IMPORTANTE: Escutar em 0.0.0.0
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`Aplicação online na porta ${PORT}`);
 });
