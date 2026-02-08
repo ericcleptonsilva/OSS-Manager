@@ -962,7 +962,7 @@ const App = () => {
             ) : (
                 <>
                     {/* Show Settings only for Admin */}
-                    {!selectedAcademyId && userRole === 'admin' && (
+                    {!selectedAcademyId && isAuthenticated && userRole === 'admin' && (
                     <button
                         onClick={handleEditTeam}
                         className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
@@ -1027,7 +1027,7 @@ const App = () => {
                 )}
 
                 {/* Admin Upload Overlay */}
-                {userRole === 'admin' && (
+                {isAuthenticated && userRole === 'admin' && (
                     <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity duration-300">
                         <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl flex items-center text-white font-bold hover:bg-white/20 transition-colors">
                             <IconEdit className="w-5 h-5 mr-2" />
@@ -1140,7 +1140,7 @@ const App = () => {
                                             <p className="text-xs opacity-80">{new Date(item.trainingDate).toLocaleDateString('pt-BR')}</p>
                                         </div>
 
-                                        {userRole === 'admin' && (
+                                        {isAuthenticated && userRole === 'admin' && (
                                             <button
                                                 onClick={() => handleUnpublishMedia(item.trainingId, item.originalIndex)}
                                                 className="absolute top-2 right-2 bg-red-600/90 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg"
