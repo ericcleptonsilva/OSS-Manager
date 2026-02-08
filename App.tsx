@@ -140,6 +140,22 @@ const App = () => {
     }
   }, [uiPrefs]);
 
+  // Update Document Title & Favicon based on Team Settings
+  useEffect(() => {
+    if (data.team.name) {
+      document.title = data.team.name;
+    }
+    if (data.team.logo) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = data.team.logo;
+    }
+  }, [data.team]);
+
   // Restore Session (Last Academy) on Mount
   useEffect(() => {
     // If admin, restore last academy
@@ -1117,8 +1133,25 @@ const App = () => {
                         </div>
                     )}
 
-                    <div className={`flex items-center text-sm border-t pt-4 relative z-10 ${uiPrefs.darkMode ? 'text-gray-300 border-gray-700' : 'text-gray-700 border-gray-100'}`}>
-                      <span className="font-medium mr-2">Instrutor:</span> {academy.instructorName}
+                    <div className={`flex items-center justify-between text-sm border-t pt-4 relative z-10 ${uiPrefs.darkMode ? 'text-gray-300 border-gray-700' : 'text-gray-700 border-gray-100'}`}>
+                      <div>
+                          <span className="font-medium mr-1">Instrutor:</span>
+                          <span className="truncate max-w-[120px] inline-block align-bottom">{academy.instructorName}</span>
+                      </div>
+
+                      <button
+                         onClick={(e) => {
+                             e.stopPropagation();
+                             handlePublicAcademyClick(academy.id);
+                         }}
+                         className={`ml-2 px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all transform hover:scale-105 ${
+                             isAuthenticated
+                             ? 'bg-jiu-primary text-white hover:bg-blue-800'
+                             : 'bg-green-600 text-white hover:bg-green-700'
+                         }`}
+                      >
+                         {isAuthenticated ? 'Acessar' : 'Login'}
+                      </button>
                     </div>
                   </div>
                 );
