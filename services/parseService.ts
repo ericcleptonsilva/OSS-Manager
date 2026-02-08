@@ -30,6 +30,21 @@ const mapAcademy = (obj: Parse.Object): Academy => ({
   financials: [] // Serão populados separadamente
 });
 
+// Secure mapper for public views (excludes credentials)
+const mapPublicAcademy = (obj: Parse.Object): Academy => ({
+  id: obj.id,
+  name: obj.get('name'),
+  address: obj.get('address'),
+  instructorName: obj.get('instructorName'),
+  description: obj.get('description'),
+  logo: obj.get('logo'),
+  schedule: obj.get('schedule') || [],
+  allowedEmails: [], // Hidden
+  adminPassword: '', // Hidden
+  trainings: [],
+  financials: []
+});
+
 // Converte objeto Parse para nossa interface Student
 const mapStudent = (obj: Parse.Object): Student => ({
   id: obj.id,
@@ -152,6 +167,7 @@ export const fetchFullData = async (): Promise<AppData> => {
         name: teamObj.get('name'),
         description: teamObj.get('description'),
         logo: teamObj.get('logo'),
+        banner: teamObj.get('banner'),
         adminEmail: teamObj.get('adminEmail'),
         adminPassword: teamObj.get('adminPassword')
       };
@@ -237,8 +253,9 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
         name: teamObj.get('name'),
         description: teamObj.get('description'),
         logo: teamObj.get('logo'),
-        adminEmail: teamObj.get('adminEmail'),
-        adminPassword: teamObj.get('adminPassword')
+        banner: teamObj.get('banner'),
+        adminEmail: '', // Hidden in public
+        adminPassword: '' // Hidden in public
       };
     } else {
       team = INITIAL_DATA.team;
@@ -247,7 +264,7 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
     // 2. Fetch Academies (Basic Info Only)
     const academyQuery = new Parse.Query('Academy');
     const academyObjs = await academyQuery.find();
-    const academies = academyObjs.map(mapAcademy);
+    const academies = academyObjs.map(mapPublicAcademy);
 
     return { team, academies };
 
@@ -415,6 +432,9 @@ export const saveTeam = async (teamData: Partial<Team>) => {
     if (teamData.logo) {
         team.set('logo', teamData.logo);
     }
+    if (teamData.banner) {
+        team.set('banner', teamData.banner);
+    }
     if (teamData.adminEmail) {
         team.set('adminEmail', teamData.adminEmail);
     }
@@ -428,6 +448,7 @@ export const saveTeam = async (teamData: Partial<Team>) => {
         name: team.get('name'),
         description: team.get('description'),
         logo: team.get('logo'),
+        banner: team.get('banner'),
         adminEmail: team.get('adminEmail'),
         adminPassword: team.get('adminPassword')
     };

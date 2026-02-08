@@ -308,7 +308,7 @@ const App = () => {
     reader.readAsText(file);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'team' | 'academy' | 'training' | 'student') => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'team' | 'team-banner' | 'academy' | 'training' | 'student') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -336,10 +336,20 @@ const App = () => {
     } else {
       const file = files[0];
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const result = reader.result as string;
         if (target === 'team') {
           setNewTeam(prev => ({ ...prev, logo: result }));
+        } else if (target === 'team-banner') {
+            // Immediately save banner for team since it's an overlay edit
+            const updatedTeam = { ...data.team, banner: result };
+            try {
+                await ParseService.saveTeam(updatedTeam);
+                setData(prev => ({ ...prev, team: updatedTeam }));
+                showNotification('Banner atualizado!');
+            } catch(e) {
+                alert("Erro ao salvar banner.");
+            }
         } else if (target === 'academy') {
           setNewAcademy(prev => ({ ...prev, logo: result }));
         } else if (target === 'student') {
@@ -820,6 +830,42 @@ const App = () => {
     return transaction.dueDate < today;
   };
 
+  const handleUnpublishMedia = async (trainingId: string, mediaIndex: number) => {
+      if (!window.confirm("Remover esta foto da galeria pública?")) return;
+
+      try {
+          // Find the training session globally (or via backend)
+          // Since we have data in memory, let's find it.
+          // Ideally we query Parse, but here we iterate academies
+          let targetAcademyId: string | null = null;
+          let targetTraining: TrainingSession | null = null;
+
+          for (const ac of data.academies) {
+              const tr = ac.trainings?.find(t => t.id === trainingId);
+              if (tr) {
+                  targetAcademyId = ac.id;
+                  targetTraining = tr;
+                  break;
+              }
+          }
+
+          if (targetAcademyId && targetTraining && targetTraining.media) {
+              const updatedMedia = [...targetTraining.media];
+              if (updatedMedia[mediaIndex]) {
+                  updatedMedia[mediaIndex] = { ...updatedMedia[mediaIndex], isPublic: false };
+
+                  // Save via Parse
+                  await ParseService.saveTraining({ ...targetTraining, media: updatedMedia }, targetAcademyId);
+                  await refreshData();
+                  showNotification("Foto removida da galeria.");
+              }
+          }
+      } catch (e) {
+          console.error(e);
+          alert("Erro ao remover foto.");
+      }
+  };
+
   // --- Computed Data ---
   const selectedAcademy = data.academies.find(a => a.id === selectedAcademyId);
   const selectedAcademyStudents = data.students.filter(s => s.academyId === selectedAcademyId);
@@ -968,6 +1014,30 @@ const App = () => {
         {/* View 1: Team Dashboard (List of Academies) - PUBLIC & ADMIN & PROFESSOR */}
         {!selectedAcademyId && !selectedStudentId && (userRole === 'admin' || userRole === 'professor' || !isAuthenticated) && (
           <div className="space-y-8 animate-fade-in">
+
+            {/* --- TEAM BANNER --- */}
+            <div className={`relative w-full h-48 md:h-64 rounded-2xl overflow-hidden shadow-lg mb-8 group bg-gray-200`}>
+                {data.team.banner ? (
+                    <img src={data.team.banner} alt="Team Banner" className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
+                ) : (
+                    <div className={`w-full h-full flex flex-col items-center justify-center ${uiPrefs.darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-200 text-gray-400'}`}>
+                        <IconCamera className="w-16 h-16 opacity-50" />
+                        <span className="text-sm font-bold uppercase tracking-widest mt-2 opacity-50">Banner da Equipe</span>
+                    </div>
+                )}
+
+                {/* Admin Upload Overlay */}
+                {userRole === 'admin' && (
+                    <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity duration-300">
+                        <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl flex items-center text-white font-bold hover:bg-white/20 transition-colors">
+                            <IconEdit className="w-5 h-5 mr-2" />
+                            {data.team.banner ? "Alterar Banner" : "Adicionar Banner"}
+                        </div>
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'team-banner')} />
+                    </label>
+                )}
+            </div>
+
             <div className="flex justify-between items-end">
               <div>
                 <h2 className={`text-3xl font-bold mb-2 ${uiPrefs.darkMode ? 'text-white' : 'text-jiu-primary'}`}>Academias</h2>
@@ -1037,6 +1107,56 @@ const App = () => {
                 );
               })}
             </div>
+
+            {/* --- PUBLIC GALLERY CAROUSEL --- */}
+            <div className="mt-12">
+                <h3 className={`text-xl font-bold mb-4 flex items-center ${uiPrefs.darkMode ? 'text-white' : 'text-gray-800'}`}>
+                    <IconCamera className="w-6 h-6 mr-2 text-jiu-primary" />
+                    Galeria de Treinos
+                </h3>
+
+                {data.academies.flatMap(a => (a.trainings || []).map(t => ({ ...t, academyName: a.name })))
+                    .flatMap(t => (t.media || []).map((m, idx) => ({ ...m, trainingId: t.id, trainingDate: t.date, academyName: t.academyName, originalIndex: idx })))
+                    .filter(m => m.isPublic)
+                    .length === 0 ? (
+                        <div className={`p-8 rounded-xl border border-dashed text-center ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-700 text-gray-500' : 'bg-white border-gray-300 text-gray-400'}`}>
+                            Nenhuma foto publicada na galeria ainda.
+                        </div>
+                    ) : (
+                        <div className="flex overflow-x-auto gap-4 pb-4 snap-x">
+                            {data.academies.flatMap(a => (a.trainings || []).map(t => ({ ...t, academyName: a.name })))
+                                .flatMap(t => (t.media || []).map((m, idx) => ({ ...m, trainingId: t.id, trainingDate: t.date, academyName: t.academyName, originalIndex: idx })))
+                                .filter(m => m.isPublic)
+                                .map((item, i) => (
+                                    <div key={`${item.trainingId}-${i}`} className="min-w-[280px] md:min-w-[320px] snap-center rounded-xl overflow-hidden shadow-md relative group">
+                                        {item.type === 'video' ? (
+                                            <video src={item.data} className="w-full h-64 object-cover" controls />
+                                        ) : (
+                                            <img src={item.data} alt="Galeria" className="w-full h-64 object-cover" />
+                                        )}
+
+                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
+                                            <p className="font-bold text-sm truncate">{item.academyName}</p>
+                                            <p className="text-xs opacity-80">{new Date(item.trainingDate).toLocaleDateString('pt-BR')}</p>
+                                        </div>
+
+                                        {userRole === 'admin' && (
+                                            <button
+                                                onClick={() => handleUnpublishMedia(item.trainingId, item.originalIndex)}
+                                                className="absolute top-2 right-2 bg-red-600/90 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg"
+                                                title="Remover da Galeria (Admin)"
+                                            >
+                                                <IconTrash className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    )
+                }
+            </div>
+
           </div>
         )}
 
@@ -2769,8 +2889,17 @@ const App = () => {
            </div>
 
            <div>
-             <label className="block text-sm font-medium text-gray-700 mb-1">Galeria de Mídia (Fotos/Vídeos)</label>
+             <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-700">Galeria de Mídia (Fotos/Vídeos)</label>
+             </div>
              
+             <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-3 flex items-start">
+                 <IconAlert className="w-4 h-4 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+                 <p className="text-xs text-yellow-800">
+                     <strong>Atenção:</strong> Proteja a privacidade. Não publique rostos de crianças na galeria pública sem autorização expressa dos responsáveis.
+                 </p>
+             </div>
+
              {/* Dropzone / Upload Button */}
              <div className="flex items-center justify-center w-full mb-4">
                 <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors bg-white">
@@ -2784,32 +2913,51 @@ const App = () => {
 
              {/* Media Grid Preview */}
              {newTraining.media && newTraining.media.length > 0 && (
-                 <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                 <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
                      {newTraining.media.map((mediaItem, index) => (
-                         <div key={index} className="relative aspect-square rounded-lg overflow-hidden group border bg-gray-100">
-                             {mediaItem.type === 'video' ? (
-                                 <video src={mediaItem.data} className="w-full h-full object-cover" />
-                             ) : (
-                                 <img src={mediaItem.data} alt={`Preview ${index}`} className="w-full h-full object-cover" />
-                             )}
-                             
-                             {/* Video Indicator Overlay */}
-                             {mediaItem.type === 'video' && (
-                                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
-                                     <div className="w-8 h-8 rounded-full bg-white/80 flex items-center justify-center">
-                                         <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-black border-b-[5px] border-b-transparent ml-0.5"></div>
-                                     </div>
-                                 </div>
-                             )}
+                         <div key={index} className="flex gap-2 p-2 border rounded-lg bg-gray-50">
+                             {/* Thumbnail */}
+                             <div className="relative w-20 h-20 rounded-md overflow-hidden flex-shrink-0 bg-gray-200 border">
+                                {mediaItem.type === 'video' ? (
+                                    <video src={mediaItem.data} className="w-full h-full object-cover" />
+                                ) : (
+                                    <img src={mediaItem.data} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                                )}
+                                {mediaItem.type === 'video' && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                        <div className="w-6 h-6 rounded-full bg-white/80 flex items-center justify-center">
+                                            <div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[5px] border-l-black border-b-[3px] border-b-transparent ml-0.5"></div>
+                                        </div>
+                                    </div>
+                                )}
+                             </div>
 
-                             {/* Remove Button */}
-                             <button
-                                 type="button"
-                                 onClick={() => handleRemoveMedia(index)}
-                                 className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                             >
-                                 ×
-                             </button>
+                             {/* Controls */}
+                             <div className="flex flex-col justify-between flex-1 py-1">
+                                 <label className="flex items-start cursor-pointer group">
+                                     <input
+                                        type="checkbox"
+                                        className="mt-1 rounded text-jiu-primary focus:ring-jiu-primary"
+                                        checked={mediaItem.isPublic || false}
+                                        onChange={(e) => {
+                                            const updatedMedia = [...(newTraining.media || [])];
+                                            updatedMedia[index] = { ...mediaItem, isPublic: e.target.checked };
+                                            setNewTraining({ ...newTraining, media: updatedMedia });
+                                        }}
+                                     />
+                                     <span className="ml-2 text-xs text-gray-600 group-hover:text-gray-900 leading-tight">
+                                         Publicar na Galeria do Site
+                                     </span>
+                                 </label>
+
+                                 <button
+                                     type="button"
+                                     onClick={() => handleRemoveMedia(index)}
+                                     className="self-end text-xs text-red-500 hover:text-red-700 flex items-center bg-red-50 px-2 py-1 rounded hover:bg-red-100 transition-colors"
+                                 >
+                                     <IconTrash className="w-3 h-3 mr-1" /> Remover
+                                 </button>
+                             </div>
                          </div>
                      ))}
                  </div>
