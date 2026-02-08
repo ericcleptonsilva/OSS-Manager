@@ -61,13 +61,6 @@
 </head>
   <body>
     <div id="root"></div>
-    <script>
-      // Global polyfills for Parse SDK compatibility
-      window.global = window;
-      if (!window.process) {
-        window.process = { env: {} };
-      }
-    </script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
