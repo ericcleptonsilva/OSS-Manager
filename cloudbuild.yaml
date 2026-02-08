@@ -1,18 +1,11 @@
 steps:
-# Exemplo para apenas listar os arquivos e garantir que ele achou o repo
-- name: 'ubuntu'
-  args: ['ls', '-la']
-
-# Exemplo de build simples (se for usar Docker)
+# O nome aqui deve ser oss-manager-image
 - name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', 'gcr.io/$PROJECT_ID/oss-manager-image', '.']
 
+# O nome aqui também deve ser oss-manager-image
 images:
 - 'gcr.io/$PROJECT_ID/oss-manager-image'
-
-steps:
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/minha-imagem', '.']
 
 options:
   logging: CLOUD_LOGGING_ONLY
