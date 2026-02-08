@@ -1898,32 +1898,41 @@ const App = () => {
                     {/* Profile Sidebar */}
                     <div className="space-y-6">
                         <div className={`rounded-xl shadow-md overflow-hidden border ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
-                             {/* New Header Design */}
-                             <div className={`relative h-32 w-full border-b overflow-hidden ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                                <div className="flex justify-between items-center h-full px-8">
-                                    {/* Left: Avatar Area */}
-                                    <div className="relative">
+                             {/* Belt Banner Header */}
+                             <div
+                                className="relative h-32 w-full border-b flex justify-between items-stretch overflow-hidden shadow-inner"
+                                style={{
+                                    background: BELT_STYLES[selectedStudent.belt]?.background || '#f3f4f6',
+                                    borderColor: BELT_STYLES[selectedStudent.belt]?.borderColor || 'transparent'
+                                }}
+                             >
+                                {/* Left: Avatar Area */}
+                                <div className="flex items-center pl-8 relative z-10">
+                                    <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100 relative">
                                         {selectedStudent.photo ? (
-                                            <div className="w-24 h-24 rounded-full border-4 border-gray-100 shadow-sm overflow-hidden bg-gray-200">
-                                                <img src={selectedStudent.photo} alt={selectedStudent.name} className="w-full h-full object-cover" />
-                                            </div>
+                                            <img src={selectedStudent.photo} alt={selectedStudent.name} className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-24 h-24 rounded-full border-4 border-gray-100 shadow-sm flex items-center justify-center bg-gray-100 text-gray-400">
-                                                <span className="text-3xl font-bold uppercase">{selectedStudent.name.charAt(0)}</span>
+                                            <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-3xl">
+                                                {selectedStudent.name.charAt(0)}
                                             </div>
                                         )}
                                     </div>
+                                </div>
 
-                                    {/* Right: Stripes Area (Vertical Bars) */}
-                                    <div className="flex items-center space-x-3 h-full py-4">
-                                        {[1, 2, 3, 4].map(d => (
-                                            <div 
-                                                key={d} 
-                                                className={`w-3 h-full rounded-full transition-colors duration-300 ${selectedStudent.degrees && selectedStudent.degrees >= d ? 'bg-black' : 'bg-gray-200 dark:bg-gray-700'}`}
-                                                title={`Grau ${d}`}
-                                            ></div>
-                                        ))}
-                                    </div>
+                                {/* Right: Black Bar (Tarja Preta) for Stripes */}
+                                <div className="w-32 bg-black h-full flex items-center justify-center gap-3 px-4 shadow-[-5px_0_15px_rgba(0,0,0,0.3)] relative z-10 clip-path-slant">
+                                    {/* Vertical Stripes (Graus) */}
+                                    {[1, 2, 3, 4].map(degree => (
+                                        <div
+                                            key={degree}
+                                            className={`w-3 h-20 rounded-full shadow-sm transition-all duration-300 ${
+                                                selectedStudent.degrees && selectedStudent.degrees >= degree
+                                                ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
+                                                : 'bg-white/10'
+                                            }`}
+                                            title={`Grau ${degree}`}
+                                        ></div>
+                                    ))}
                                 </div>
                              </div>
 
@@ -1932,7 +1941,7 @@ const App = () => {
                                     <h2 className={`text-2xl font-bold ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedStudent.name}</h2>
                                     <p className="text-gray-500 text-sm mt-1">Início: {new Date(selectedStudent.startDate).toLocaleDateString()}</p>
                                 </div>
-                                
+
                                 {/* EVOLUTION / PROGRESS CARD */}
                                 <div className={`mb-6 p-6 rounded-xl border border-yellow-200 ${uiPrefs.darkMode ? 'bg-yellow-900/10 border-yellow-700/30' : 'bg-yellow-50'}`}>
                                     <h4 className={`text-sm font-bold uppercase mb-4 text-center tracking-wider ${uiPrefs.darkMode ? 'text-yellow-500' : 'text-yellow-700'}`}>
