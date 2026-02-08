@@ -2,18 +2,18 @@ FROM node:22
 
 WORKDIR /app
 
+# Instala dependências
 COPY package*.json ./
 RUN npm install
 
+# Copia o resto e gera o build do Vite
 COPY . .
-
-# Gera os arquivos estáticos do Vite
 RUN npm run build
 
-# Instala o express para servir o build
+# Garante que o express esteja instalado para o server.js
 RUN npm install express
 
 EXPOSE 8080
 
-# Roda o servidor que criamos no passo 1
+# Comando para rodar o servidor que criamos acima
 CMD ["node", "server.js"]
