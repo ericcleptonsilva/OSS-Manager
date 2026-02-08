@@ -1,19 +1,21 @@
-FROM node:22
+FROM node:20-slim
 
 WORKDIR /app
 
-# Instala dependências
+# Copia arquivos de dependências
 COPY package*.json ./
 RUN npm install
 
-# Copia o resto e gera o build do Vite
+# Copia o restante e faz o build
 COPY . .
 RUN npm run build
 
-# Garante que o express esteja instalado para o server.js
+# Instala o express explicitamente
 RUN npm install express
 
+# Define a porta como variável (boas práticas)
+ENV PORT=8080
 EXPOSE 8080
 
-# Comando para rodar o servidor que criamos acima
+# Executa o servidor
 CMD ["node", "server.js"]
