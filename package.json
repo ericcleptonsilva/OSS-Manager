@@ -9,8 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "events": "^3.3.0",
-    "parse": "^5.0.0",
+    "parse": "^8.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.4.1"
