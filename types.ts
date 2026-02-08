@@ -94,6 +94,7 @@ export interface Academy {
   description?: string;
   logo?: string;
   allowedEmails?: string[]; // Lista de emails permitidos para gerenciar a academia
+  adminPassword?: string; // Senha para acesso do professor
   trainings: TrainingSession[]; // Histórico de aulas da academia
   financials: FinancialTransaction[]; // Histórico financeiro
 }
@@ -103,6 +104,8 @@ export interface Team {
   name: string;
   description: string;
   logo?: string;
+  adminEmail?: string;
+  adminPassword?: string;
 }
 
 export interface AppData {

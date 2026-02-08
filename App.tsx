@@ -95,6 +95,14 @@ const App = () => {
       setIsAuthenticated(true);
       const email = currentUser.get('email') || '';
       checkUserRoleAndLoadData(email);
+    } else {
+        // Check local custom session
+        const storedSession = localStorage.getItem('oss_custom_session');
+        if (storedSession) {
+            const session = JSON.parse(storedSession);
+            setIsAuthenticated(true);
+            checkUserRoleAndLoadData(session.email);
+        }
     }
   }, []);
 
@@ -170,8 +178,18 @@ const App = () => {
       e.preventDefault();
       
       try {
-        // Apenas fluxo de Login
-        await ParseService.loginUser(loginEmail, loginPassword);
+        // Fluxo de Login Customizado (Parse User OU Team Admin OU Academy Professor)
+        const user = await ParseService.performCustomLogin(loginEmail, loginPassword);
+
+        // Persist session locally for non-Parse users (Mock users)
+        if (!user.getSessionToken()) {
+            localStorage.setItem('oss_custom_session', JSON.stringify({
+                email: user.get('email'),
+                role: user.id === 'admin-user' ? 'admin' : 'student',
+                userId: user.id
+            }));
+        }
+
         checkUserRoleAndLoadData(loginEmail);
         setIsLoginModalOpen(false);
 
@@ -201,6 +219,7 @@ const App = () => {
 
   const handleLogout = async () => {
       await ParseService.logoutUser();
+      localStorage.removeItem('oss_custom_session'); // Clear custom session
       setIsAuthenticated(false);
       setUserRole('admin');
       setCurrentUserId(null);
@@ -2124,6 +2143,30 @@ const App = () => {
             />
           </div>
 
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+              <h4 className="font-bold text-gray-800 text-sm border-b pb-2">Credenciais de Administrador (Global)</h4>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email do Admin</label>
+                <input
+                  type="email"
+                  className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
+                  placeholder="admin@equipe.com"
+                  value={newTeam.adminEmail || ''}
+                  onChange={e => setNewTeam({...newTeam, adminEmail: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Senha do Admin</label>
+                <input
+                  type="text"
+                  className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
+                  placeholder="Definir senha de acesso"
+                  value={newTeam.adminPassword || ''}
+                  onChange={e => setNewTeam({...newTeam, adminPassword: e.target.value})}
+                />
+              </div>
+          </div>
+
           {/* Data Management (Backup) Section */}
           <div className="border-t pt-4 mt-4">
              <h4 className="font-bold text-gray-800 text-sm mb-3">Gerenciamento de Dados (Backup)</h4>
@@ -2248,16 +2291,30 @@ const App = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email do Professor (Acesso)</label>
-            <input
-              type="email"
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
-              placeholder="email@professor.com"
-              value={newAcademy.allowedEmails?.[0] || ''}
-              onChange={e => setNewAcademy({...newAcademy, allowedEmails: [e.target.value]})}
-            />
-            <p className="text-xs text-gray-500 mt-1">Este email terá permissão para acessar esta academia.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border">
+            <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Credenciais de Acesso (Professor)</label>
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email de Login</label>
+                <input
+                type="email"
+                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary outline-none bg-white text-gray-900"
+                placeholder="email@professor.com"
+                value={newAcademy.allowedEmails?.[0] || ''}
+                onChange={e => setNewAcademy({...newAcademy, allowedEmails: [e.target.value]})}
+                />
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                <input
+                type="text"
+                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary outline-none bg-white text-gray-900"
+                placeholder="Senha de acesso"
+                value={newAcademy.adminPassword || ''}
+                onChange={e => setNewAcademy({...newAcademy, adminPassword: e.target.value})}
+                />
+            </div>
           </div>
           
           <div>
