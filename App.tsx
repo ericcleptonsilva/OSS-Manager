@@ -177,38 +177,38 @@ const App = () => {
 
   // --- Actions ---
 
-  const checkUserRoleAndLoadData = (email: string, explicitRole?: UserRole) => {
+  const checkUserRoleAndLoadData = async (email: string, explicitRole?: UserRole) => {
       setIsAuthenticated(true);
       
-      ParseService.fetchFullData().then(fetchedData => {
-          setData(fetchedData);
+      const fetchedData = await ParseService.fetchFullData();
+      setData(fetchedData);
 
-          // 1. Try to find if it is a student
-          const studentFound = fetchedData.students.find(s => s.email.toLowerCase() === email.toLowerCase());
-          
-          if (studentFound && (!explicitRole || explicitRole === 'student')) {
-              setUserRole('student');
-              setCurrentUserId(studentFound.id);
-              setSelectedAcademyId(studentFound.academyId);
-              setSelectedStudentId(studentFound.id);
-              showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
+      // 1. Try to find if it is a student
+      const studentFound = fetchedData.students.find(s => s.email.toLowerCase() === email.toLowerCase());
+
+      if (studentFound && (!explicitRole || explicitRole === 'student')) {
+          setUserRole('student');
+          setCurrentUserId(studentFound.id);
+          setSelectedAcademyId(studentFound.academyId);
+          setSelectedStudentId(studentFound.id);
+          showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
+      } else {
+          // 2. Not a student, check explicit role
+          if (explicitRole) {
+              setUserRole(explicitRole);
           } else {
-              // 2. Not a student, check explicit role
-              if (explicitRole) {
-                  setUserRole(explicitRole);
-              } else {
-                  // Fallback default
-                  setUserRole('admin');
-              }
-              setCurrentUserId(null);
-
-              if (explicitRole === 'professor') {
-                   showNotification(`Bem-vindo, Professor!`);
-              } else {
-                   showNotification(`Bem-vindo, Admin!`);
-              }
+              // Fallback default
+              setUserRole('admin');
           }
-      });
+          setCurrentUserId(null);
+          
+          if (explicitRole === 'professor') {
+                showNotification(`Bem-vindo, Professor!`);
+          } else {
+                showNotification(`Bem-vindo, Admin!`);
+          }
+      }
+      return fetchedData;
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -233,14 +233,19 @@ const App = () => {
             }));
         }
 
-        checkUserRoleAndLoadData(loginEmail, role);
+        const freshData = await checkUserRoleAndLoadData(loginEmail, role);
         setIsLoginModalOpen(false);
 
         if (loginTargetAcademyId) {
-            const targetAcademy = data.academies.find(a => a.id === loginTargetAcademyId);
+            // Use freshData to check permissions, as state update might not be immediate or we want to be sure
+            const targetAcademy = freshData.academies.find(a => a.id === loginTargetAcademyId);
             // Check Access after login
             if (targetAcademy && targetAcademy.allowedEmails && targetAcademy.allowedEmails.length > 0) {
-                if (!targetAcademy.allowedEmails.includes(loginEmail)) {
+                // Normalize emails
+                const normalizedAllowed = targetAcademy.allowedEmails.map(e => e.trim().toLowerCase());
+                const normalizedLogin = loginEmail.trim().toLowerCase();
+
+                if (!normalizedAllowed.includes(normalizedLogin)) {
                     alert("Acesso Negado: Seu email não tem permissão para gerenciar esta academia.");
                     setLoginTargetAcademyId(null);
                     return;
@@ -1212,44 +1217,44 @@ const App = () => {
 
         {/* View 2: Academy Detail - ADMIN & PROFESSOR */}
         {selectedAcademy && !selectedStudentId && (userRole === 'admin' || userRole === 'professor') && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-6 md:space-y-8 animate-fade-in">
             
             {/* Breadcrumb / Back */}
             <button 
               onClick={handleBackToAcademies}
-              className="flex items-center text-gray-500 hover:text-jiu-primary transition-colors mb-4"
+              className="flex items-center text-gray-500 hover:text-jiu-primary transition-colors mb-4 text-sm"
             >
               <IconBack className="w-4 h-4 mr-1" /> Voltar para Academias
             </button>
 
             {/* Academy Header */}
-            <div className={`rounded-2xl shadow-sm border p-6 md:p-8 relative overflow-hidden ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
+            <div className={`rounded-2xl shadow-sm border p-4 md:p-8 relative overflow-hidden ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
               <div className="absolute top-0 right-0 w-64 h-64 bg-jiu-primary opacity-5 rounded-full transform translate-x-1/3 -translate-y-1/3 blur-3xl"></div>
               
               <div className="relative z-10 flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-                <div className="flex flex-col md:flex-row gap-6 flex-1">
+                <div className="flex flex-col md:flex-row gap-4 md:gap-6 flex-1">
                   
                   {/* Academy Logo Large */}
-                  <div className={`w-24 h-24 md:w-32 md:h-32 rounded-xl border-2 shadow-md overflow-hidden flex-shrink-0 flex items-center justify-center
+                  <div className={`w-20 h-20 md:w-32 md:h-32 rounded-xl border-2 shadow-md overflow-hidden flex-shrink-0 flex items-center justify-center self-center md:self-start
                     ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-white'}
                   `}>
                     {selectedAcademy.logo ? (
                       <img src={selectedAcademy.logo} alt={selectedAcademy.name} className="w-full h-full object-cover" />
                     ) : (
-                      <IconAcademy className="w-12 h-12 text-gray-300" />
+                      <IconAcademy className="w-10 h-10 md:w-12 md:h-12 text-gray-300" />
                     )}
                   </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h2 className={`text-3xl md:text-4xl font-bold ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAcademy.name}</h2>
+                  <div className="flex-1 text-center md:text-left">
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-2 mb-2">
+                      <h2 className={`text-2xl md:text-4xl font-bold ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAcademy.name}</h2>
                       <div className="flex space-x-2">
                         <button 
                           onClick={() => handleEditAcademy(selectedAcademy)}
                           className="text-gray-400 hover:text-jiu-primary transition-colors p-1 rounded-full hover:bg-gray-100 hover:bg-opacity-10"
                           title="Editar Informações da Academia"
                         >
-                          <IconEdit className="w-6 h-6" />
+                          <IconEdit className="w-5 h-5 md:w-6 md:h-6" />
                         </button>
                         {userRole === 'admin' && (
                         <button 
@@ -1257,31 +1262,31 @@ const App = () => {
                           className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded-full hover:bg-red-50 hover:bg-opacity-10"
                           title="Excluir Academia"
                         >
-                          <IconTrash className="w-6 h-6" />
+                          <IconTrash className="w-5 h-5 md:w-6 md:h-6" />
                         </button>
                         )}
                       </div>
                     </div>
                     
                     {selectedAcademy.description && (
-                      <p className={`mb-4 italic max-w-2xl ${uiPrefs.darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      <p className={`mb-4 italic max-w-2xl text-sm md:text-base ${uiPrefs.darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                         "{selectedAcademy.description}"
                       </p>
                     )}
 
-                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-8 mt-4 ${uiPrefs.darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      <p className="flex items-center">
-                        <span className="font-semibold w-24">Instrutor:</span> 
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-8 mt-4 text-sm md:text-base ${uiPrefs.darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <p className="flex items-center justify-center md:justify-start">
+                        <span className="font-semibold w-auto md:w-24 mr-2 md:mr-0">Instrutor:</span>
                         <span>{selectedAcademy.instructorName}</span>
                       </p>
-                      <p className="flex items-center">
-                        <span className="font-semibold w-24">Endereço:</span> 
-                        <span>{selectedAcademy.address}</span>
+                      <p className="flex items-center justify-center md:justify-start">
+                        <span className="font-semibold w-auto md:w-24 mr-2 md:mr-0">Endereço:</span>
+                        <span className="truncate max-w-[200px]">{selectedAcademy.address}</span>
                       </p>
                       
                       {/* Display Schedule */}
                       {(selectedAcademy.schedule && selectedAcademy.schedule.length > 0) && (
-                        <div className={`col-span-1 md:col-span-2 mt-2 px-4 py-3 rounded-lg border ${uiPrefs.darkMode ? 'bg-indigo-900/30 border-indigo-800 text-indigo-300' : 'bg-indigo-50 border-indigo-100 text-indigo-700'}`}>
+                        <div className={`col-span-1 md:col-span-2 mt-2 px-4 py-3 rounded-lg border text-left ${uiPrefs.darkMode ? 'bg-indigo-900/30 border-indigo-800 text-indigo-300' : 'bg-indigo-50 border-indigo-100 text-indigo-700'}`}>
                           <div className="flex items-start">
                               <IconClock className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
                               <div className="flex-1">
@@ -1306,7 +1311,7 @@ const App = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 mt-4 lg:mt-0 self-start lg:self-auto">
+                <div className="flex flex-col sm:flex-row gap-3 mt-4 lg:mt-0 self-center md:self-start lg:self-auto w-full sm:w-auto">
                    <button 
                     onClick={handleGenerateAiAnalysis}
                     disabled={isAiLoading}
@@ -1900,19 +1905,19 @@ const App = () => {
                         <div className={`rounded-xl shadow-md overflow-hidden border ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
                              {/* Belt Banner Header */}
                              <div
-                                className="relative h-32 w-full border-b flex justify-between items-stretch overflow-hidden shadow-inner"
+                                className="relative h-24 md:h-32 w-full border-b flex justify-between items-stretch overflow-hidden shadow-inner"
                                 style={{
                                     background: BELT_STYLES[selectedStudent.belt]?.background || '#f3f4f6',
                                     borderColor: BELT_STYLES[selectedStudent.belt]?.borderColor || 'transparent'
                                 }}
                              >
                                 {/* Left: Avatar Area */}
-                                <div className="flex items-center pl-8 relative z-10">
-                                    <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100 relative">
+                                <div className="flex items-center pl-4 md:pl-8 relative z-10">
+                                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100 relative">
                                         {selectedStudent.photo ? (
                                             <img src={selectedStudent.photo} alt={selectedStudent.name} className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-3xl">
+                                            <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-2xl md:text-3xl">
                                                 {selectedStudent.name.charAt(0)}
                                             </div>
                                         )}
@@ -1920,12 +1925,12 @@ const App = () => {
                                 </div>
 
                                 {/* Right: Black Bar (Tarja Preta) for Stripes */}
-                                <div className="w-32 bg-black h-full flex items-center justify-center gap-3 px-4 shadow-[-5px_0_15px_rgba(0,0,0,0.3)] relative z-10 clip-path-slant">
+                                <div className="w-24 md:w-32 bg-black h-full flex items-center justify-center gap-2 md:gap-3 px-2 md:px-4 shadow-[-5px_0_15px_rgba(0,0,0,0.3)] relative z-10 clip-path-slant">
                                     {/* Vertical Stripes (Graus) */}
                                     {[1, 2, 3, 4].map(degree => (
                                         <div
                                             key={degree}
-                                            className={`w-3 h-20 rounded-full shadow-sm transition-all duration-300 ${
+                                            className={`w-2 md:w-3 h-12 md:h-20 rounded-full shadow-sm transition-all duration-300 ${
                                                 selectedStudent.degrees && selectedStudent.degrees >= degree
                                                 ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
                                                 : 'bg-white/10'
@@ -2232,7 +2237,7 @@ const App = () => {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
               <select 
@@ -2258,7 +2263,7 @@ const App = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Vencimento (1ª Parcela)</label>
               <input 
@@ -2466,7 +2471,7 @@ const App = () => {
           {/* Data Management (Backup) Section */}
           <div className="border-t pt-4 mt-4">
              <h4 className="font-bold text-gray-800 text-sm mb-3">Gerenciamento de Dados (Backup)</h4>
-             <div className="grid grid-cols-2 gap-3">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                  <button
                     type="button"
                     onClick={handleExportData}
@@ -2587,8 +2592,8 @@ const App = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-1 gap-4 bg-gray-50 p-3 rounded-lg border">
+            <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Credenciais de Acesso (Professor)</label>
             </div>
             <div>
@@ -2755,7 +2760,7 @@ const App = () => {
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
               <input 
@@ -2794,7 +2799,7 @@ const App = () => {
                           onChange={e => setNewStudent({...newStudent, guardianName: e.target.value})}
                       />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                           <label className="block text-xs font-medium text-yellow-800 mb-1">WhatsApp Responsável</label>
                           <input 
@@ -2819,7 +2824,7 @@ const App = () => {
               </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email (Login)</label>
                 <input
@@ -2841,7 +2846,7 @@ const App = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Faixa Atual</label>
               <select 
@@ -2910,7 +2915,7 @@ const App = () => {
                 />
            </div>
 
-           <div className="grid grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                <div>
                    <label className="block text-sm font-medium text-gray-700 mb-1">Duração</label>
                    <input 
