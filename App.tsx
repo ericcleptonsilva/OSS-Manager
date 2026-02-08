@@ -40,6 +40,8 @@ const App = () => {
   const [selectedAcademyId, setSelectedAcademyId] = useState<string | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [activeAcademyTab, setActiveAcademyTab] = useState<'students' | 'trainings' | 'financial'>('students');
+  const [loginTargetAcademyId, setLoginTargetAcademyId] = useState<string | null>(null);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   
   // 4. Notification State
   const [notification, setNotification] = useState<string | null>(null);
@@ -78,6 +80,16 @@ const App = () => {
   // Initialize Parse
   useEffect(() => {
     ParseService.initializeParse();
+
+    // Load public data immediately
+    ParseService.fetchPublicData().then(publicData => {
+        setData(prev => ({
+            ...prev,
+            team: publicData.team,
+            academies: publicData.academies
+        }));
+    });
+
     const currentUser = ParseService.getCurrentUser();
     if (currentUser) {
       setIsAuthenticated(true);
@@ -161,6 +173,12 @@ const App = () => {
         // Apenas fluxo de Login
         await ParseService.loginUser(loginEmail, loginPassword);
         checkUserRoleAndLoadData(loginEmail);
+        setIsLoginModalOpen(false);
+
+        if (loginTargetAcademyId) {
+            setSelectedAcademyId(loginTargetAcademyId);
+            setLoginTargetAcademyId(null);
+        }
       } catch (error: any) {
         console.error(error);
         if (error.code === 101) {
@@ -349,6 +367,15 @@ const App = () => {
       setSelectedAcademyId(null);
       setUiPrefs(prev => ({ ...prev, lastAcademyId: null }));
   }
+
+  const handlePublicAcademyClick = (academyId: string) => {
+      if (isAuthenticated) {
+          handleSelectAcademy(academyId);
+      } else {
+          setLoginTargetAcademyId(academyId);
+          setIsLoginModalOpen(true);
+      }
+  };
 
   const handleScheduleChange = (day: string, action: 'toggleDay' | 'addRange' | 'removeRange' | 'updateRange', payload?: any) => {
     const currentSchedule = newAcademy.schedule || [];
@@ -727,85 +754,6 @@ const App = () => {
 
   // --- Render ---
 
-  // LOGIN SCREEN
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 relative overflow-hidden font-sans">
-        {/* Background Image / Overlay */}
-        <div className="absolute inset-0 z-0 opacity-20">
-            <img 
-                src="https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?ixlib=rb-4.0.3&auto=format&fit=crop&w=2069&q=80" 
-                alt="BJJ Background" 
-                className="w-full h-full object-cover"
-            />
-        </div>
-        <div className="absolute inset-0 z-0 bg-gradient-to-t from-gray-900 via-gray-900/90 to-blue-900/50"></div>
-
-        <div className="bg-white/5 backdrop-blur-lg p-8 rounded-2xl shadow-2xl z-10 w-full max-w-md border border-white/10 animate-fade-in mx-4">
-            <div className="flex flex-col items-center mb-8">
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg border-2 border-jiu-primary overflow-hidden">
-                    {data.team.logo ? (
-                        <img src={data.team.logo} alt="Logo" className="w-full h-full object-cover" />
-                    ) : (
-                        <IconAcademy className="w-10 h-10 text-jiu-primary" />
-                    )}
-                </div>
-                <h1 className="text-2xl font-bold text-white tracking-wide">{data.team.name}</h1>
-                <p className="text-blue-200 text-sm">Gestão de Equipe & Performance</p>
-                <p className="text-gray-400 text-xs mt-1">(Conectado ao Back4App)</p>
-            </div>
-
-            <form onSubmit={handleLogin} className="space-y-6">
-                <div>
-                    <label className="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">Email</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <IconMail className="h-5 w-5 text-gray-500" />
-                        </div>
-                        <input
-                            type="email"
-                            required
-                            className="block w-full pl-10 pr-3 py-3 border border-gray-600 rounded-lg leading-5 bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors sm:text-sm"
-                            placeholder="seu@email.com"
-                            value={loginEmail}
-                            onChange={(e) => setLoginEmail(e.target.value)}
-                        />
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">Senha</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <IconLock className="h-5 w-5 text-gray-500" />
-                        </div>
-                        <input
-                            type="password"
-                            required
-                            className="block w-full pl-10 pr-3 py-3 border border-gray-600 rounded-lg leading-5 bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors sm:text-sm"
-                            placeholder="••••••"
-                            value={loginPassword}
-                            onChange={(e) => setLoginPassword(e.target.value)}
-                        />
-                    </div>
-                </div>
-
-                <button
-                    type="submit"
-                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-jiu-primary hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all transform hover:scale-[1.02]"
-                >
-                    Entrar no Sistema
-                </button>
-
-                <div className="text-center text-xs text-gray-500 mt-4 space-y-1">
-                    <p>Certifique-se de ter preenchido o APP ID em services/parseService.ts</p>
-                </div>
-            </form>
-        </div>
-      </div>
-    );
-  }
-
   if (isLoadingData) {
       return (
           <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
@@ -846,47 +794,58 @@ const App = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Show Settings only for Admin */}
-            {!selectedAcademyId && userRole === 'admin' && (
-              <button 
-                onClick={handleEditTeam}
-                className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
-                title="Configurações da Equipe"
-              >
-                <IconSettings className="w-6 h-6" />
-              </button>
-            )}
-
-            {/* Admin Navigation */}
-            {selectedAcademyId && !selectedStudentId && userRole === 'admin' && (
-              <button 
-                onClick={handleBackToAcademies}
-                className="md:hidden text-gray-300 hover:text-white"
-              >
-                <IconBack className="w-6 h-6" />
-              </button>
-            )}
-
-            {/* Admin Student Detail Navigation */}
-            {selectedStudentId && userRole === 'admin' && (
-                 <button 
-                 onClick={() => setSelectedStudentId(null)}
-                 className="md:hidden text-gray-300 hover:text-white"
+            {!isAuthenticated ? (
+               <button
+                  onClick={() => setIsLoginModalOpen(true)}
+                  className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors border border-white/20"
                >
-                 <IconBack className="w-6 h-6" />
+                 Área Restrita (Login)
                </button>
-            )}
+            ) : (
+                <>
+                    {/* Show Settings only for Admin */}
+                    {!selectedAcademyId && userRole === 'admin' && (
+                    <button
+                        onClick={handleEditTeam}
+                        className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+                        title="Configurações da Equipe"
+                    >
+                        <IconSettings className="w-6 h-6" />
+                    </button>
+                    )}
 
-            <div className="h-6 w-px bg-gray-700 mx-1 hidden md:block"></div>
-            
-            <button 
-                onClick={handleLogout}
-                className="text-gray-300 hover:text-red-400 p-2 rounded-full hover:bg-white/5 transition-colors flex items-center gap-1"
-                title="Sair"
-            >
-                <IconLogout className="w-6 h-6" />
-                <span className="text-xs font-medium hidden md:block">Sair</span>
-            </button>
+                    {/* Admin Navigation */}
+                    {selectedAcademyId && !selectedStudentId && userRole === 'admin' && (
+                    <button
+                        onClick={handleBackToAcademies}
+                        className="md:hidden text-gray-300 hover:text-white"
+                    >
+                        <IconBack className="w-6 h-6" />
+                    </button>
+                    )}
+
+                    {/* Admin Student Detail Navigation */}
+                    {selectedStudentId && userRole === 'admin' && (
+                        <button
+                        onClick={() => setSelectedStudentId(null)}
+                        className="md:hidden text-gray-300 hover:text-white"
+                    >
+                        <IconBack className="w-6 h-6" />
+                    </button>
+                    )}
+
+                    <div className="h-6 w-px bg-gray-700 mx-1 hidden md:block"></div>
+
+                    <button
+                        onClick={handleLogout}
+                        className="text-gray-300 hover:text-red-400 p-2 rounded-full hover:bg-white/5 transition-colors flex items-center gap-1"
+                        title="Sair"
+                    >
+                        <IconLogout className="w-6 h-6" />
+                        <span className="text-xs font-medium hidden md:block">Sair</span>
+                    </button>
+                </>
+            )}
           </div>
         </div>
       </header>
@@ -894,21 +853,25 @@ const App = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         
-        {/* View 1: Team Dashboard (List of Academies) - ADMIN ONLY */}
-        {!selectedAcademyId && !selectedStudentId && userRole === 'admin' && (
+        {/* View 1: Team Dashboard (List of Academies) - PUBLIC & ADMIN */}
+        {!selectedAcademyId && !selectedStudentId && (userRole === 'admin' || !isAuthenticated) && (
           <div className="space-y-8 animate-fade-in">
             <div className="flex justify-between items-end">
               <div>
                 <h2 className={`text-3xl font-bold mb-2 ${uiPrefs.darkMode ? 'text-white' : 'text-jiu-primary'}`}>Academias</h2>
-                <p className={uiPrefs.darkMode ? 'text-gray-400' : 'text-gray-600'}>Gerencie as unidades da sua equipe.</p>
+                <p className={uiPrefs.darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                    {isAuthenticated ? "Gerencie as unidades da sua equipe." : "Escolha sua unidade para acessar."}
+                </p>
               </div>
-              <button 
-                onClick={handleOpenNewAcademyModal}
-                className="bg-jiu-accent hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-md flex items-center transition-all transform hover:scale-105"
-              >
-                <IconPlus className="w-5 h-5 mr-2" />
-                Nova Academia
-              </button>
+              {isAuthenticated && userRole === 'admin' && (
+                <button
+                    onClick={handleOpenNewAcademyModal}
+                    className="bg-jiu-accent hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-md flex items-center transition-all transform hover:scale-105"
+                >
+                    <IconPlus className="w-5 h-5 mr-2" />
+                    Nova Academia
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -917,7 +880,7 @@ const App = () => {
                 return (
                   <div 
                     key={academy.id}
-                    onClick={() => handleSelectAcademy(academy.id)}
+                    onClick={() => handlePublicAcademyClick(academy.id)}
                     className={`rounded-xl shadow-sm hover:shadow-xl border p-6 cursor-pointer transition-all duration-200 group relative overflow-hidden 
                       ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}
                     `}
@@ -1789,6 +1752,65 @@ const App = () => {
       </main>
 
       {/* --- Modals --- */}
+
+      {/* Login Modal */}
+      <Modal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        title="Acesso Restrito"
+      >
+        <div className="flex flex-col items-center mb-6">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                <IconLock className="w-8 h-8 text-gray-500" />
+            </div>
+            <p className="text-gray-500 text-sm text-center">Entre com suas credenciais para acessar esta área.</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <IconMail className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                        type="email"
+                        required
+                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all"
+                        placeholder="seu@email.com"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <IconLock className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                        type="password"
+                        required
+                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all"
+                        placeholder="••••••"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            <div className="pt-2">
+                <button
+                    type="submit"
+                    className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-jiu-primary hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                >
+                    Entrar
+                </button>
+            </div>
+        </form>
+      </Modal>
       
       {/* Delete Student Modal */}
       <Modal
