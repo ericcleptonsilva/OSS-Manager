@@ -588,16 +588,32 @@ const App = () => {
       if (userRole !== 'admin') return;
       const student = data.students.find(s => s.id === studentId);
       if(!student) return;
+
       const newDegree = student.degrees === degree ? degree - 1 : degree;
       const finalDegree = newDegree < 0 ? 0 : newDegree;
+
       try {
-          await ParseService.saveStudent({ id: studentId, degrees: finalDegree });
+          // Reset stars if we are changing degree (optional logic, but makes sense for "evolution")
+          await ParseService.saveStudent({ id: studentId, degrees: finalDegree, progressStars: 0 });
           setData(prev => ({
             ...prev,
-            students: prev.students.map(s => s.id === studentId ? { ...s, degrees: finalDegree } : s)
+            students: prev.students.map(s => s.id === studentId ? { ...s, degrees: finalDegree, progressStars: 0 } : s)
           }));
       } catch (e) {
           console.error("Erro ao atualizar grau", e);
+      }
+  };
+
+  const handleUpdateStudentProgress = async (studentId: string, stars: number) => {
+      if (userRole !== 'admin' && userRole !== 'professor') return;
+      try {
+          await ParseService.saveStudent({ id: studentId, progressStars: stars });
+          setData(prev => ({
+              ...prev,
+              students: prev.students.map(s => s.id === studentId ? { ...s, progressStars: stars } : s)
+          }));
+      } catch (e) {
+          console.error("Erro ao atualizar progresso", e);
       }
   };
 
@@ -1012,6 +1028,7 @@ const App = () => {
       <main className="container mx-auto px-4 py-8">
         
         {/* View 1: Team Dashboard (List of Academies) - PUBLIC & ADMIN & PROFESSOR */}
+        {/* Note: Student role is redirected to profile automatically, so they don't see this list normally, but we hide it just in case */}
         {!selectedAcademyId && !selectedStudentId && (userRole === 'admin' || userRole === 'professor' || !isAuthenticated) && (
           <div className="space-y-8 animate-fade-in">
 
@@ -1834,6 +1851,7 @@ const App = () => {
         {/* View 3: Student Profile (Read Only History or Admin View) */}
         {selectedStudent && (
             <div className="space-y-8 animate-fade-in">
+                 {/* Only allow going back if NOT a student (since students are locked to this view) */}
                  {(userRole === 'admin' || userRole === 'professor') && (
                     <button 
                         onClick={() => setSelectedStudentId(null)}
@@ -1876,14 +1894,65 @@ const App = () => {
                                         {[1,2,3,4].map(d => (
                                             <div 
                                                 key={d} 
-                                                onClick={() => handleUpdateStudentDegree(selectedStudent.id, d)}
-                                                className={`w-2 h-6 border border-gray-400 ${selectedStudent.degrees && selectedStudent.degrees >= d ? 'bg-white' : 'bg-transparent'} ${(userRole === 'admin' || userRole === 'professor') ? 'cursor-pointer hover:bg-white/50' : ''}`}
+                                                className={`w-2 h-6 border border-gray-400 ${selectedStudent.degrees && selectedStudent.degrees >= d ? 'bg-white' : 'bg-transparent'}`}
                                             ></div>
                                         ))}
                                     </div>
                                 </div>
                                 <p className="text-center text-gray-500 text-sm mb-6">Início: {new Date(selectedStudent.startDate).toLocaleDateString()}</p>
                                 
+                                {/* EVOLUTION / PROGRESS CARD */}
+                                <div className={`mb-6 p-4 rounded-lg border border-yellow-500/30 ${uiPrefs.darkMode ? 'bg-yellow-900/10' : 'bg-yellow-50'}`}>
+                                    <h4 className={`text-sm font-bold uppercase mb-3 text-center ${uiPrefs.darkMode ? 'text-yellow-500' : 'text-yellow-700'}`}>
+                                        Progresso do Grau
+                                    </h4>
+
+                                    <div className="flex justify-center space-x-2 mb-4">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                disabled={userRole === 'student'}
+                                                onClick={() => handleUpdateStudentProgress(selectedStudent.id, star === selectedStudent.progressStars ? star - 1 : star)}
+                                                className={`transition-all transform ${userRole !== 'student' ? 'hover:scale-125 cursor-pointer' : 'cursor-default'}`}
+                                            >
+                                                <IconSparkles
+                                                    className={`w-8 h-8 ${
+                                                        (selectedStudent.progressStars || 0) >= star
+                                                        ? 'text-yellow-400 fill-yellow-400 drop-shadow-md'
+                                                        : 'text-gray-300 dark:text-gray-600'
+                                                    }`}
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Actions for Professor/Admin */}
+                                    {(userRole === 'admin' || userRole === 'professor') && (
+                                        <div className="flex justify-center space-x-2">
+                                            {(selectedStudent.progressStars || 0) >= 5 && (selectedStudent.degrees || 0) < 4 && (
+                                                <button
+                                                    onClick={() => handleUpdateStudentDegree(selectedStudent.id, (selectedStudent.degrees || 0) + 1)}
+                                                    className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow animate-pulse"
+                                                >
+                                                    + Graduar Grau
+                                                </button>
+                                            )}
+                                            {(selectedStudent.degrees || 0) >= 4 && (
+                                                <button
+                                                    onClick={() => {
+                                                        // Simple alert for now, could be a belt selector modal
+                                                        alert("Parabéns! Hora de trocar a faixa. Edite o aluno para alterar a cor da faixa manualmente.");
+                                                        handleEditStudent(selectedStudent);
+                                                    }}
+                                                    className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-xs font-bold shadow animate-pulse border border-gray-700"
+                                                >
+                                                    🎓 Trocar Faixa
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className={`space-y-3 text-sm ${uiPrefs.darkMode ? 'text-gray-300' : 'text-gray-800'}`}>
                                     <div className={`flex justify-between border-b pb-2 ${uiPrefs.darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                                         <span className="text-gray-500">Idade</span>
@@ -2709,14 +2778,26 @@ const App = () => {
               </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input 
-              type="email" 
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
-              value={newStudent.email || ''}
-              onChange={e => setNewStudent({...newStudent, email: e.target.value})}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email (Login)</label>
+                <input
+                type="email"
+                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+                value={newStudent.email || ''}
+                onChange={e => setNewStudent({...newStudent, email: e.target.value})}
+                />
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Senha (Login)</label>
+                <input
+                type="text"
+                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+                placeholder="Definir senha"
+                value={newStudent.password || ''}
+                onChange={e => setNewStudent({...newStudent, password: e.target.value})}
+                />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
