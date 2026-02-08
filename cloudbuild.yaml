@@ -9,3 +9,17 @@ images:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args:
+  - 'run'
+  - 'deploy'
+  - 'NOME-DO-SEU-SERVICO' # Troque pelo nome que aparece no Cloud Run
+  - '--image'
+  - 'gcr.io/$PROJECT_ID/oss-manager-image'
+  - '--region'
+  - 'us-central1' # Troque pela sua região (ex: southamerica-east1)
+  - '--platform'
+  - 'managed'
+  - '--allow-unauthenticated'
