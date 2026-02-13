@@ -7,9 +7,9 @@ import { Modal } from './components/Modal';
 import { generateTeamAnalysis } from './services/geminiService';
 import * as ParseService from './services/parseService';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { useTheme } from './contexts/ThemeContext';
 
-interface UiPreferences {
-  darkMode: boolean;
+interface SessionPreferences {
   lastAcademyId?: string | null;
 }
 
@@ -30,10 +30,12 @@ const App = () => {
   // 1. Data State
   const [data, setData] = useState<AppData>(INITIAL_DATA);
 
-  // 2. UI Preferences State (Persisted)
-  const [uiPrefs, setUiPrefs] = useState<UiPreferences>(() => {
+  const { darkMode, toggleDarkMode } = useTheme();
+
+  // 2. Session Preferences State (Persisted)
+  const [sessionPrefs, setSessionPrefs] = useState<SessionPreferences>(() => {
     const saved = localStorage.getItem('oss_manager_ui_prefs');
-    return saved ? JSON.parse(saved) : { darkMode: false, lastAcademyId: null };
+    return saved ? { lastAcademyId: JSON.parse(saved).lastAcademyId } : { lastAcademyId: null };
   });
 
   // 3. Navigation/Session State
@@ -129,16 +131,10 @@ const App = () => {
     }
   }, [isAuthenticated]);
 
-  // Persist UI Preferences & Apply Theme
+  // Persist Session Preferences
   useEffect(() => {
-    localStorage.setItem('oss_manager_ui_prefs', JSON.stringify(uiPrefs));
-    
-    if (uiPrefs.darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [uiPrefs]);
+    localStorage.setItem('oss_manager_ui_prefs', JSON.stringify(sessionPrefs));
+  }, [sessionPrefs]);
 
   // Update Document Title & Favicon based on Team Settings
   useEffect(() => {
@@ -159,10 +155,10 @@ const App = () => {
   // Restore Session (Last Academy) on Mount
   useEffect(() => {
     // If admin, restore last academy
-    if (isAuthenticated && userRole === 'admin' && uiPrefs.lastAcademyId && !selectedAcademyId && !isLoadingData) {
-       const exists = data.academies.find(a => a.id === uiPrefs.lastAcademyId);
+    if (isAuthenticated && userRole === 'admin' && sessionPrefs.lastAcademyId && !selectedAcademyId && !isLoadingData) {
+       const exists = data.academies.find(a => a.id === sessionPrefs.lastAcademyId);
        if (exists) {
-         setSelectedAcademyId(uiPrefs.lastAcademyId);
+         setSelectedAcademyId(sessionPrefs.lastAcademyId);
        }
     }
     // If student, force navigation to their profile
@@ -284,9 +280,7 @@ const App = () => {
     }, 3000);
   };
 
-  const toggleDarkMode = () => {
-    setUiPrefs(prev => ({ ...prev, darkMode: !prev.darkMode }));
-  };
+  // toggleDarkMode is imported from useTheme
 
   // --- Backup & Restore Logic ---
   const handleExportData = () => {
@@ -438,7 +432,7 @@ const App = () => {
         await ParseService.deleteObject('Academy', selectedAcademyId);
         await refreshData();
         setSelectedAcademyId(null);
-        setUiPrefs(prev => ({ ...prev, lastAcademyId: null }));
+        setSessionPrefs(prev => ({ ...prev, lastAcademyId: null }));
         setIsDeleteModalOpen(false);
         showNotification('Academia removida.');
     } catch (e) {
@@ -453,14 +447,14 @@ const App = () => {
 
   const handleSelectAcademy = (id: string) => {
       setSelectedAcademyId(id);
-      setUiPrefs(prev => ({ ...prev, lastAcademyId: id }));
+      setSessionPrefs(prev => ({ ...prev, lastAcademyId: id }));
       setAiAnalysis(null);
       setActiveAcademyTab('students');
   }
 
   const handleBackToAcademies = () => {
       setSelectedAcademyId(null);
-      setUiPrefs(prev => ({ ...prev, lastAcademyId: null }));
+      setSessionPrefs(prev => ({ ...prev, lastAcademyId: null }));
   }
 
   const handlePublicAcademyClick = (academyId: string) => {
@@ -966,7 +960,7 @@ const App = () => {
 
   // APP LOGGED IN
   return (
-    <div className={`min-h-screen font-sans pb-20 transition-colors duration-300 ${uiPrefs.darkMode ? 'bg-jiu-dark text-gray-100' : 'bg-gray-50 text-gray-800'}`}>
+    <div className={`min-h-screen font-sans pb-20 transition-colors duration-300 ${darkMode ? 'bg-jiu-dark text-gray-100' : 'bg-gray-50 text-gray-800'}`}>
       
       {/* Header */}
       <header className="bg-jiu-secondary text-white shadow-lg sticky top-0 z-40 border-b border-gray-800">
@@ -1062,7 +1056,7 @@ const App = () => {
                 {data.team.banner ? (
                     <img src={data.team.banner} alt="Team Banner" className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
                 ) : (
-                    <div className={`w-full h-full flex flex-col items-center justify-center ${uiPrefs.darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-200 text-gray-400'}`}>
+                    <div className={`w-full h-full flex flex-col items-center justify-center ${darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-200 text-gray-400'}`}>
                         <IconCamera className="w-16 h-16 opacity-50" />
                         <span className="text-sm font-bold uppercase tracking-widest mt-2 opacity-50">Banner da Equipe</span>
                     </div>
@@ -1082,8 +1076,8 @@ const App = () => {
 
             <div className="flex justify-between items-end">
               <div>
-                <h2 className={`text-3xl font-bold mb-2 ${uiPrefs.darkMode ? 'text-white' : 'text-jiu-primary'}`}>Academias</h2>
-                <p className={uiPrefs.darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                <h2 className={`text-3xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-jiu-primary'}`}>Academias</h2>
+                <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
                     {isAuthenticated ? "Gerencie as unidades da sua equipe." : "Escolha sua unidade para acessar."}
                 </p>
               </div>
@@ -1106,12 +1100,12 @@ const App = () => {
                     key={academy.id}
                     onClick={() => handlePublicAcademyClick(academy.id)}
                     className={`rounded-xl shadow-sm hover:shadow-xl border p-6 cursor-pointer transition-all duration-200 group relative overflow-hidden 
-                      ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}
+                      ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}
                     `}
                   >
                     <div className="flex justify-between items-start mb-4 relative z-10">
                       <div className={`w-16 h-16 rounded-lg border flex items-center justify-center overflow-hidden group-hover:border-jiu-primary transition-colors
-                        ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-50 border-gray-200'}
+                        ${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-50 border-gray-200'}
                       `}>
                         {academy.logo ? (
                           <img src={academy.logo} alt={academy.name} className="w-full h-full object-cover" />
@@ -1119,16 +1113,16 @@ const App = () => {
                           <IconAcademy className="w-8 h-8 text-gray-400" />
                         )}
                       </div>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded ${uiPrefs.darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
                         {studentCount} Alunos
                       </span>
                     </div>
-                    <h3 className={`text-xl font-bold mb-1 relative z-10 ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>{academy.name}</h3>
-                    <p className={`text-sm mb-2 relative z-10 ${uiPrefs.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{academy.address}</p>
+                    <h3 className={`text-xl font-bold mb-1 relative z-10 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{academy.name}</h3>
+                    <p className={`text-sm mb-2 relative z-10 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{academy.address}</p>
 
                     {/* Schedule on Card */}
                     {academy.schedule && academy.schedule.length > 0 && (
-                        <div className={`text-xs mb-4 relative z-10 ${uiPrefs.darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <div className={`text-xs mb-4 relative z-10 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                             <p className="font-semibold mb-1 flex items-center"><IconClock className="w-3 h-3 mr-1"/> Horários:</p>
                             {academy.schedule.map((s, idx) => (
                                 <div key={idx} className="flex justify-between max-w-[200px]">
@@ -1142,7 +1136,7 @@ const App = () => {
                         </div>
                     )}
 
-                    <div className={`flex items-center justify-between text-sm border-t pt-4 relative z-10 ${uiPrefs.darkMode ? 'text-gray-300 border-gray-700' : 'text-gray-700 border-gray-100'}`}>
+                    <div className={`flex items-center justify-between text-sm border-t pt-4 relative z-10 ${darkMode ? 'text-gray-300 border-gray-700' : 'text-gray-700 border-gray-100'}`}>
                       <div>
                           <span className="font-medium mr-1">Instrutor:</span>
                           <span className="truncate max-w-[120px] inline-block align-bottom">{academy.instructorName}</span>
@@ -1169,7 +1163,7 @@ const App = () => {
 
             {/* --- PUBLIC GALLERY CAROUSEL --- */}
             <div className="mt-12">
-                <h3 className={`text-xl font-bold mb-4 flex items-center ${uiPrefs.darkMode ? 'text-white' : 'text-gray-800'}`}>
+                <h3 className={`text-xl font-bold mb-4 flex items-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                     <IconCamera className="w-6 h-6 mr-2 text-jiu-primary" />
                     Galeria de Treinos
                 </h3>
@@ -1178,7 +1172,7 @@ const App = () => {
                     .flatMap(t => (t.media || []).map((m, idx) => ({ ...m, trainingId: t.id, trainingDate: t.date, academyName: t.academyName, originalIndex: idx })))
                     .filter(m => m.isPublic)
                     .length === 0 ? (
-                        <div className={`p-8 rounded-xl border border-dashed text-center ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-700 text-gray-500' : 'bg-white border-gray-300 text-gray-400'}`}>
+                        <div className={`p-8 rounded-xl border border-dashed text-center ${darkMode ? 'bg-gray-800 border-gray-700 text-gray-500' : 'bg-white border-gray-300 text-gray-400'}`}>
                             Nenhuma foto publicada na galeria ainda.
                         </div>
                     ) : (
@@ -1232,7 +1226,7 @@ const App = () => {
             </button>
 
             {/* Academy Header */}
-            <div className={`rounded-2xl shadow-sm border p-4 md:p-8 relative overflow-hidden ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
+            <div className={`rounded-2xl shadow-sm border p-4 md:p-8 relative overflow-hidden ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
               <div className="absolute top-0 right-0 w-64 h-64 bg-jiu-primary opacity-5 rounded-full transform translate-x-1/3 -translate-y-1/3 blur-3xl"></div>
               
               <div className="relative z-10 flex flex-col lg:flex-row lg:items-start justify-between gap-6">
@@ -1240,7 +1234,7 @@ const App = () => {
                   
                   {/* Academy Logo Large */}
                   <div className={`w-20 h-20 md:w-32 md:h-32 rounded-xl border-2 shadow-md overflow-hidden flex-shrink-0 flex items-center justify-center self-center md:self-start
-                    ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-white'}
+                    ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-white'}
                   `}>
                     {selectedAcademy.logo ? (
                       <img src={selectedAcademy.logo} alt={selectedAcademy.name} className="w-full h-full object-cover" />
@@ -1251,7 +1245,7 @@ const App = () => {
 
                   <div className="flex-1 text-center md:text-left">
                     <div className="flex flex-col md:flex-row items-center md:items-start gap-2 mb-2">
-                      <h2 className={`text-2xl md:text-4xl font-bold ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAcademy.name}</h2>
+                      <h2 className={`text-2xl md:text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAcademy.name}</h2>
                       <div className="flex space-x-2">
                         <button 
                           onClick={() => handleEditAcademy(selectedAcademy)}
@@ -1273,12 +1267,12 @@ const App = () => {
                     </div>
                     
                     {selectedAcademy.description && (
-                      <p className={`mb-4 italic max-w-2xl text-sm md:text-base ${uiPrefs.darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      <p className={`mb-4 italic max-w-2xl text-sm md:text-base ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                         "{selectedAcademy.description}"
                       </p>
                     )}
 
-                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-8 mt-4 text-sm md:text-base ${uiPrefs.darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-8 mt-4 text-sm md:text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       <p className="flex items-center justify-center md:justify-start">
                         <span className="font-semibold w-auto md:w-24 mr-2 md:mr-0">Instrutor:</span>
                         <span>{selectedAcademy.instructorName}</span>
@@ -1290,7 +1284,7 @@ const App = () => {
                       
                       {/* Display Schedule */}
                       {(selectedAcademy.schedule && selectedAcademy.schedule.length > 0) && (
-                        <div className={`col-span-1 md:col-span-2 mt-2 px-4 py-3 rounded-lg border text-left ${uiPrefs.darkMode ? 'bg-indigo-900/30 border-indigo-800 text-indigo-300' : 'bg-indigo-50 border-indigo-100 text-indigo-700'}`}>
+                        <div className={`col-span-1 md:col-span-2 mt-2 px-4 py-3 rounded-lg border text-left ${darkMode ? 'bg-indigo-900/30 border-indigo-800 text-indigo-300' : 'bg-indigo-50 border-indigo-100 text-indigo-700'}`}>
                           <div className="flex items-start">
                               <IconClock className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
                               <div className="flex-1">
@@ -1333,12 +1327,12 @@ const App = () => {
 
               {/* AI Analysis Section */}
               {aiAnalysis && (
-                <div className={`mt-6 border rounded-xl p-6 animate-fade-in ${uiPrefs.darkMode ? 'bg-indigo-900/20 border-indigo-800' : 'bg-indigo-50 border-indigo-100'}`}>
+                <div className={`mt-6 border rounded-xl p-6 animate-fade-in ${darkMode ? 'bg-indigo-900/20 border-indigo-800' : 'bg-indigo-50 border-indigo-100'}`}>
                   <h4 className="text-indigo-500 font-bold mb-2 flex items-center">
                     <IconSparkles className="w-4 h-4 mr-2" /> 
                     Insight do Coach Virtual
                   </h4>
-                  <div className={`prose prose-sm max-w-none whitespace-pre-line ${uiPrefs.darkMode ? 'text-indigo-200' : 'text-indigo-800'}`}>
+                  <div className={`prose prose-sm max-w-none whitespace-pre-line ${darkMode ? 'text-indigo-200' : 'text-indigo-800'}`}>
                     {aiAnalysis}
                   </div>
                 </div>
@@ -1346,13 +1340,13 @@ const App = () => {
             </div>
             
             {/* Academy Navigation Tabs */}
-            <div className={`flex border-b overflow-x-auto ${uiPrefs.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className={`flex border-b overflow-x-auto ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <button 
                 onClick={() => setActiveAcademyTab('students')}
                 className={`px-6 py-3 font-medium text-sm flex items-center transition-colors whitespace-nowrap
                   ${activeAcademyTab === 'students' 
                     ? 'border-b-2 border-jiu-primary text-jiu-primary' 
-                    : `text-gray-500 hover:text-gray-700 ${uiPrefs.darkMode ? 'hover:text-gray-300' : ''}`}`}
+                    : `text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}`}
               >
                 <IconUsers className="w-5 h-5 mr-2" />
                 Tatame (Alunos)
@@ -1362,7 +1356,7 @@ const App = () => {
                  className={`px-6 py-3 font-medium text-sm flex items-center transition-colors whitespace-nowrap
                   ${activeAcademyTab === 'trainings' 
                     ? 'border-b-2 border-jiu-primary text-jiu-primary' 
-                    : `text-gray-500 hover:text-gray-700 ${uiPrefs.darkMode ? 'hover:text-gray-300' : ''}`}`}
+                    : `text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}`}
               >
                 <IconClipboard className="w-5 h-5 mr-2" />
                 Aulas / Treinos
@@ -1372,7 +1366,7 @@ const App = () => {
                  className={`px-6 py-3 font-medium text-sm flex items-center transition-colors whitespace-nowrap
                   ${activeAcademyTab === 'financial' 
                     ? 'border-b-2 border-green-600 text-green-600' 
-                    : `text-gray-500 hover:text-gray-700 ${uiPrefs.darkMode ? 'hover:text-gray-300' : ''}`}`}
+                    : `text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}`}
               >
                 <IconMoney className="w-5 h-5 mr-2" />
                 Financeiro
@@ -1396,7 +1390,7 @@ const App = () => {
                         </div>
 
                         {selectedAcademyStudents.length === 0 ? (
-                        <div className={`rounded-xl border-2 border-dashed p-12 text-center ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700 text-gray-500' : 'bg-white border-gray-300 text-gray-400'}`}>
+                        <div className={`rounded-xl border-2 border-dashed p-12 text-center ${darkMode ? 'bg-jiu-surface border-gray-700 text-gray-500' : 'bg-white border-gray-300 text-gray-400'}`}>
                             Nenhum aluno matriculado nesta academia ainda.
                         </div>
                         ) : (
@@ -1497,8 +1491,8 @@ const App = () => {
                     {/* Stats Panel (Pie Chart & Attendance Chart) */}
                     <div className="space-y-6">
                         {/* 1. Pie Chart: Belts */}
-                        <div className={`rounded-xl shadow-sm border p-6 ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
-                          <h3 className={`font-bold mb-4 text-center ${uiPrefs.darkMode ? 'text-white' : 'text-gray-700'}`}>Distribuição de Faixas</h3>
+                        <div className={`rounded-xl shadow-sm border p-6 ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
+                          <h3 className={`font-bold mb-4 text-center ${darkMode ? 'text-white' : 'text-gray-700'}`}>Distribuição de Faixas</h3>
                           <div className="h-64 w-full">
                               {beltDistribution.length > 0 ? (
                               <ResponsiveContainer width="100%" height="100%">
@@ -1525,8 +1519,8 @@ const App = () => {
                                         borderRadius: '8px', 
                                         border: 'none', 
                                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                                        backgroundColor: uiPrefs.darkMode ? '#1e293b' : '#fff',
-                                        color: uiPrefs.darkMode ? '#fff' : '#000'
+                                        backgroundColor: darkMode ? '#1e293b' : '#fff',
+                                        color: darkMode ? '#fff' : '#000'
                                       }}
                                   />
                                   <Legend verticalAlign="bottom" height={36}/>
@@ -1541,8 +1535,8 @@ const App = () => {
                         </div>
 
                         {/* 2. Bar Chart: Attendance by Day */}
-                        <div className={`rounded-xl shadow-sm border p-6 ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
-                            <h3 className={`font-bold mb-4 text-center ${uiPrefs.darkMode ? 'text-white' : 'text-gray-700'}`}>Presenças por Dia</h3>
+                        <div className={`rounded-xl shadow-sm border p-6 ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
+                            <h3 className={`font-bold mb-4 text-center ${darkMode ? 'text-white' : 'text-gray-700'}`}>Presenças por Dia</h3>
                             <div className="h-48 w-full">
                                 {attendanceByDay.length > 0 && attendanceByDay.some(d => d.count > 0) ? (
                                     <ResponsiveContainer width="100%" height="100%">
@@ -1550,24 +1544,24 @@ const App = () => {
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
                                             <XAxis 
                                                 dataKey="name" 
-                                                tick={{fontSize: 10, fill: uiPrefs.darkMode ? '#9ca3af' : '#4b5563'}} 
+                                                tick={{fontSize: 10, fill: darkMode ? '#9ca3af' : '#4b5563'}}
                                                 axisLine={false}
                                                 tickLine={false}
                                             />
                                             <YAxis 
                                                 allowDecimals={false}
-                                                tick={{fontSize: 10, fill: uiPrefs.darkMode ? '#9ca3af' : '#4b5563'}}
+                                                tick={{fontSize: 10, fill: darkMode ? '#9ca3af' : '#4b5563'}}
                                                 axisLine={false}
                                                 tickLine={false}
                                             />
                                             <Tooltip
-                                                cursor={{fill: uiPrefs.darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}}
+                                                cursor={{fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}}
                                                 contentStyle={{ 
                                                     borderRadius: '8px', 
                                                     border: 'none', 
                                                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                                                    backgroundColor: uiPrefs.darkMode ? '#1e293b' : '#fff',
-                                                    color: uiPrefs.darkMode ? '#fff' : '#000'
+                                                    backgroundColor: darkMode ? '#1e293b' : '#fff',
+                                                    color: darkMode ? '#fff' : '#000'
                                                 }}
                                             />
                                             <Bar dataKey="count" fill="#1e3a8a" radius={[4, 4, 0, 0]} name="Presenças" />
@@ -1596,11 +1590,11 @@ const App = () => {
                     </div>
 
                     {(!selectedAcademy.trainings || selectedAcademy.trainings.length === 0) ? (
-                         <div className={`p-12 rounded-xl text-center border-2 border-dashed ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-200'}`}>
-                             <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${uiPrefs.darkMode ? 'bg-gray-800 text-gray-500' : 'bg-gray-100 text-gray-400'}`}>
+                         <div className={`p-12 rounded-xl text-center border-2 border-dashed ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-200'}`}>
+                             <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${darkMode ? 'bg-gray-800 text-gray-500' : 'bg-gray-100 text-gray-400'}`}>
                                  <IconCalendar className="w-8 h-8" />
                              </div>
-                             <h4 className={`text-lg font-medium ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>Nenhum treino registrado</h4>
+                             <h4 className={`text-lg font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Nenhum treino registrado</h4>
                              <p className="text-gray-500 max-w-md mx-auto mt-2">Comece a registrar as aulas para criar um histórico de evolução da academia.</p>
                          </div>
                      ) : (
@@ -1613,7 +1607,7 @@ const App = () => {
                                  return (
                                  <div 
                                     key={training.id} 
-                                    className={`relative rounded-xl overflow-hidden shadow-sm border flex flex-col md:flex-row hover:shadow-md transition-shadow ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}
+                                    className={`relative rounded-xl overflow-hidden shadow-sm border flex flex-col md:flex-row hover:shadow-md transition-shadow ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}
                                     style={coverMedia ? {
                                         backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.4)), url(${coverMedia.data})`,
                                         backgroundSize: 'cover',
@@ -1621,7 +1615,7 @@ const App = () => {
                                     } : {}}
                                 >
                                      {/* Conditional Date Block (Darker if bg image) */}
-                                     <div className={`p-6 flex-shrink-0 flex flex-col items-center justify-center w-full md:w-24 h-24 md:h-auto relative z-10 ${coverMedia ? 'text-white' : (uiPrefs.darkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-50 text-blue-800')}`}>
+                                     <div className={`p-6 flex-shrink-0 flex flex-col items-center justify-center w-full md:w-24 h-24 md:h-auto relative z-10 ${coverMedia ? 'text-white' : (darkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-50 text-blue-800')}`}>
                                          <span className="text-xs font-bold uppercase">{new Date(training.date).toLocaleString('pt-BR', { month: 'short' })}</span>
                                          <span className="text-2xl font-bold">{new Date(training.date).getDate()}</span>
                                          <span className="text-xs">{new Date(training.date).getFullYear()}</span>
@@ -1636,7 +1630,7 @@ const App = () => {
                                      <div className="flex-1 p-6 relative z-10">
                                          <div className="flex justify-between items-start">
                                             <div>
-                                                <h4 className={`font-bold text-lg ${coverMedia ? 'text-white' : (uiPrefs.darkMode ? 'text-white' : 'text-gray-900')}`}>
+                                                <h4 className={`font-bold text-lg ${coverMedia ? 'text-white' : (darkMode ? 'text-white' : 'text-gray-900')}`}>
                                                     {/* Display techniques as tags */}
                                                     {training.techniques && training.techniques.length > 0 ? (
                                                         <div className="flex flex-wrap gap-2">
@@ -1679,7 +1673,7 @@ const App = () => {
                                              <p className={`text-sm mt-3 p-3 rounded-lg border backdrop-blur-sm ${
                                                  coverMedia 
                                                  ? 'bg-black/40 border-white/10 text-gray-200' 
-                                                 : (uiPrefs.darkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-100 text-gray-600')
+                                                 : (darkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-100 text-gray-600')
                                              }`}>
                                                  {training.description}
                                              </p>
@@ -1696,11 +1690,11 @@ const App = () => {
                 
                 {/* Stats Cards (Header) */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className={`rounded-xl p-6 border shadow-sm ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-green-100'}`}>
+                  <div className={`rounded-xl p-6 border shadow-sm ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-green-100'}`}>
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-gray-500 text-sm font-medium">Receita (Total)</p>
-                        <h3 className={`text-2xl font-bold mt-1 ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <h3 className={`text-2xl font-bold mt-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                           R$ {totalRevenue.toFixed(2)}
                         </h3>
                       </div>
@@ -1710,11 +1704,11 @@ const App = () => {
                     </div>
                   </div>
 
-                  <div className={`rounded-xl p-6 border shadow-sm ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-yellow-100'}`}>
+                  <div className={`rounded-xl p-6 border shadow-sm ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-yellow-100'}`}>
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-gray-500 text-sm font-medium">A Receber</p>
-                        <h3 className={`text-2xl font-bold mt-1 ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <h3 className={`text-2xl font-bold mt-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                           R$ {totalPending.toFixed(2)}
                         </h3>
                       </div>
@@ -1724,7 +1718,7 @@ const App = () => {
                     </div>
                   </div>
 
-                  <div className={`rounded-xl p-6 border shadow-sm ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-red-100'}`}>
+                  <div className={`rounded-xl p-6 border shadow-sm ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-red-100'}`}>
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-gray-500 text-sm font-medium">Em Atraso (Inadimplentes)</p>
@@ -1740,7 +1734,7 @@ const App = () => {
                 </div>
 
                 <div className="flex justify-between items-center border-b pb-4 dark:border-gray-700">
-                    <h3 className={`text-xl font-bold ${uiPrefs.darkMode ? 'text-white' : 'text-gray-800'}`}>Situação dos Alunos</h3>
+                    <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Situação dos Alunos</h3>
                     <button 
                       onClick={handleOpenTransactionModal}
                       className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md flex items-center transition-colors text-sm font-medium"
@@ -1763,7 +1757,7 @@ const App = () => {
                             const isDefaulter = overdueSum > 0;
 
                             return (
-                                <div key={student.id} className={`rounded-xl border shadow-sm overflow-hidden flex flex-col ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-200'}`}>
+                                <div key={student.id} className={`rounded-xl border shadow-sm overflow-hidden flex flex-col ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-200'}`}>
                                     {/* Card Header */}
                                     <div className="p-4 flex items-center space-x-3 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                                          <div className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-sm flex-shrink-0" style={{borderColor: beltStyle.solid}}>
@@ -1776,7 +1770,7 @@ const App = () => {
                                              )}
                                          </div>
                                          <div className="flex-1 min-w-0">
-                                             <h4 className={`font-bold truncate ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>{student.name}</h4>
+                                             <h4 className={`font-bold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{student.name}</h4>
                                              <div className="flex items-center space-x-2">
                                                 <span className="text-xs px-2 py-0.5 rounded text-white font-medium" style={{backgroundColor: beltStyle.solid}}>{student.belt}</span>
                                                 {isDefaulter && (
@@ -1798,7 +1792,7 @@ const App = () => {
                                     <div className="p-4 flex-1">
                                         <div className="mb-4">
                                             <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Mensalidade Estimada</p>
-                                            <p className={`text-lg font-bold ${uiPrefs.darkMode ? 'text-white' : 'text-gray-800'}`}>
+                                            <p className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                                                 {monthlyAmount > 0 ? `R$ ${monthlyAmount.toFixed(2)}` : 'Não definida'}
                                             </p>
                                         </div>
@@ -1835,7 +1829,7 @@ const App = () => {
                                                         return (
                                                             <div key={tx.id} className="flex justify-between items-center text-sm p-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                                                 <div className="flex flex-col">
-                                                                    <span className={`text-xs font-bold ${isLate ? 'text-red-500' : (uiPrefs.darkMode ? 'text-gray-300' : 'text-gray-700')}`}>
+                                                                    <span className={`text-xs font-bold ${isLate ? 'text-red-500' : (darkMode ? 'text-gray-300' : 'text-gray-700')}`}>
                                                                         {new Date(tx.dueDate).toLocaleDateString('pt-BR')}
                                                                     </span>
                                                                     <span className="text-[10px] text-gray-500 truncate max-w-[120px]">{tx.description || tx.type}</span>
@@ -1906,7 +1900,7 @@ const App = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Profile Sidebar */}
                     <div className="space-y-6">
-                        <div className={`rounded-xl shadow-md overflow-hidden border ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
+                        <div className={`rounded-xl shadow-md overflow-hidden border ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
                              {/* Belt Banner Header */}
                              <div
                                 className="relative h-24 md:h-32 w-full border-b flex justify-between items-stretch overflow-hidden shadow-inner"
@@ -1947,13 +1941,13 @@ const App = () => {
 
                              <div className="p-6">
                                 <div className="mb-6">
-                                    <h2 className={`text-2xl font-bold ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedStudent.name}</h2>
+                                    <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedStudent.name}</h2>
                                     <p className="text-gray-500 text-sm mt-1">Início: {new Date(selectedStudent.startDate).toLocaleDateString()}</p>
                                 </div>
 
                                 {/* EVOLUTION / PROGRESS CARD */}
-                                <div className={`mb-6 p-6 rounded-xl border border-yellow-200 ${uiPrefs.darkMode ? 'bg-yellow-900/10 border-yellow-700/30' : 'bg-yellow-50'}`}>
-                                    <h4 className={`text-sm font-bold uppercase mb-4 text-center tracking-wider ${uiPrefs.darkMode ? 'text-yellow-500' : 'text-yellow-700'}`}>
+                                <div className={`mb-6 p-6 rounded-xl border border-yellow-200 ${darkMode ? 'bg-yellow-900/10 border-yellow-700/30' : 'bg-yellow-50'}`}>
+                                    <h4 className={`text-sm font-bold uppercase mb-4 text-center tracking-wider ${darkMode ? 'text-yellow-500' : 'text-yellow-700'}`}>
                                         Progresso do Grau
                                     </h4>
 
@@ -2003,28 +1997,28 @@ const App = () => {
                                     )}
                                 </div>
 
-                                <div className={`space-y-3 text-sm ${uiPrefs.darkMode ? 'text-gray-300' : 'text-gray-800'}`}>
-                                    <div className={`flex justify-between border-b pb-2 ${uiPrefs.darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                                <div className={`space-y-3 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-800'}`}>
+                                    <div className={`flex justify-between border-b pb-2 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                                         <span className="text-gray-500">Idade</span>
                                         <span className="font-medium">
                                             {selectedStudent.birthDate ? `${new Date().getFullYear() - new Date(selectedStudent.birthDate).getFullYear()} anos` : '-'}
                                         </span>
                                     </div>
-                                    <div className={`flex justify-between border-b pb-2 ${uiPrefs.darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                                    <div className={`flex justify-between border-b pb-2 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                                         <span className="text-gray-500">Presenças Totais</span>
                                         <span className="font-medium">{studentTrainings.length}</span>
                                     </div>
-                                    <div className={`flex justify-between border-b pb-2 ${uiPrefs.darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                                    <div className={`flex justify-between border-b pb-2 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                                         <span className="text-gray-500">Faltas Estimadas</span>
                                         <span className="font-medium text-red-500">{calculateAbsences(selectedStudent, selectedAcademy?.trainings || [])}</span>
                                     </div>
                                     
                                     {/* Contacts Section */}
-                                    <div className={`flex justify-between border-b pb-2 ${uiPrefs.darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                                    <div className={`flex justify-between border-b pb-2 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                                         <span className="text-gray-500">Email</span>
                                         <span className="font-medium truncate max-w-[150px]">{selectedStudent.email}</span>
                                     </div>
-                                    <div className={`flex justify-between border-b pb-2 ${uiPrefs.darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                                    <div className={`flex justify-between border-b pb-2 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                                         <span className="text-gray-500">Telefone</span>
                                         <span className="font-medium truncate max-w-[150px]">{selectedStudent.phone}</span>
                                     </div>
@@ -2032,21 +2026,21 @@ const App = () => {
                                     {/* Guardian Information (Conditional) */}
                                     {selectedStudent.guardianName && (
                                        <>
-                                           <div className={`flex justify-between border-b pb-2 mt-4 bg-gray-50 p-2 rounded ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-700' : 'border-gray-100'}`}>
+                                           <div className={`flex justify-between border-b pb-2 mt-4 bg-gray-50 p-2 rounded ${darkMode ? 'bg-gray-800 border-gray-700' : 'border-gray-100'}`}>
                                                <span className="text-gray-500 font-bold text-xs uppercase">Responsável</span>
                                            </div>
-                                           <div className={`flex justify-between border-b pb-2 ${uiPrefs.darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                                           <div className={`flex justify-between border-b pb-2 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                                                <span className="text-gray-500">Nome</span>
                                                <span className="font-medium truncate max-w-[150px]">{selectedStudent.guardianName}</span>
                                            </div>
                                            {selectedStudent.guardianPhone && (
-                                               <div className={`flex justify-between border-b pb-2 ${uiPrefs.darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                                               <div className={`flex justify-between border-b pb-2 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                                                    <span className="text-gray-500">Telefone</span>
                                                    <span className="font-medium truncate max-w-[150px]">{selectedStudent.guardianPhone}</span>
                                                </div>
                                            )}
                                            {selectedStudent.guardianCpf && (
-                                               <div className={`flex justify-between border-b pb-2 ${uiPrefs.darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                                               <div className={`flex justify-between border-b pb-2 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                                                    <span className="text-gray-500">CPF</span>
                                                    <span className="font-medium truncate max-w-[150px]">{selectedStudent.guardianCpf}</span>
                                                </div>
@@ -2060,25 +2054,25 @@ const App = () => {
 
                     {/* Training History Feed */}
                     <div className="lg:col-span-2 space-y-6">
-                         <h3 className={`font-bold text-xl flex items-center ${uiPrefs.darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                         <h3 className={`font-bold text-xl flex items-center ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                             <IconHistory className="w-6 h-6 mr-2 text-jiu-primary" />
                             Seu Diário de Evolução
                          </h3>
 
                          {studentTrainings.length === 0 ? (
-                             <div className={`p-12 rounded-xl text-center border-2 border-dashed ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-200'}`}>
-                                 <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${uiPrefs.darkMode ? 'bg-gray-800 text-gray-500' : 'bg-gray-100 text-gray-400'}`}>
+                             <div className={`p-12 rounded-xl text-center border-2 border-dashed ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-200'}`}>
+                                 <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${darkMode ? 'bg-gray-800 text-gray-500' : 'bg-gray-100 text-gray-400'}`}>
                                      <IconClipboard className="w-8 h-8" />
                                  </div>
-                                 <h4 className={`text-lg font-medium ${uiPrefs.darkMode ? 'text-white' : 'text-gray-900'}`}>Nenhuma presença registrada</h4>
+                                 <h4 className={`text-lg font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Nenhuma presença registrada</h4>
                                  <p className="text-gray-500 max-w-md mx-auto mt-2">Você ainda não possui presenças registradas em treinos.</p>
                              </div>
                          ) : (
                              <div className="space-y-4">
                                  {studentTrainings.map((training) => (
-                                     <div key={training.id} className={`rounded-xl p-6 shadow-sm border flex flex-col md:flex-row gap-6 hover:shadow-md transition-shadow ${uiPrefs.darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
+                                     <div key={training.id} className={`rounded-xl p-6 shadow-sm border flex flex-col md:flex-row gap-6 hover:shadow-md transition-shadow ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
                                          {/* Date Block */}
-                                         <div className={`flex-shrink-0 flex flex-col items-center justify-center rounded-lg w-full md:w-20 h-20 ${uiPrefs.darkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-50 text-blue-800'}`}>
+                                         <div className={`flex-shrink-0 flex flex-col items-center justify-center rounded-lg w-full md:w-20 h-20 ${darkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-50 text-blue-800'}`}>
                                              <span className="text-xs font-bold uppercase">{new Date(training.date).toLocaleString('pt-BR', { month: 'short' })}</span>
                                              <span className="text-2xl font-bold">{new Date(training.date).getDate()}</span>
                                              <span className="text-xs">{new Date(training.date).getFullYear()}</span>
@@ -2089,7 +2083,7 @@ const App = () => {
                                                 <div>
                                                     <div className="flex flex-wrap gap-2 mb-1">
                                                         {(training.techniques || []).map((t, i) => (
-                                                            <span key={i} className={`text-xs font-bold px-2 py-1 rounded ${uiPrefs.darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                                                            <span key={i} className={`text-xs font-bold px-2 py-1 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
                                                                 {t}
                                                             </span>
                                                         ))}
@@ -2098,14 +2092,14 @@ const App = () => {
                                                         <span className="flex items-center"><IconClock className="w-3 h-3 mr-1"/> {training.duration} de duração</span>
                                                     </div>
                                                 </div>
-                                                <div className={`flex items-center px-2 py-1 rounded text-xs font-bold ${uiPrefs.darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-50 text-green-600'}`}>
+                                                <div className={`flex items-center px-2 py-1 rounded text-xs font-bold ${darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-50 text-green-600'}`}>
                                                     <IconCheck className="w-3 h-3 mr-1" />
                                                     Presente
                                                 </div>
                                              </div>
                                              
                                              {training.description && (
-                                                 <p className={`text-sm mt-3 p-3 rounded-lg border ${uiPrefs.darkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
+                                                 <p className={`text-sm mt-3 p-3 rounded-lg border ${darkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
                                                      {training.description}
                                                  </p>
                                              )}
@@ -2504,12 +2498,12 @@ const App = () => {
                   <button 
                     type="button"
                     onClick={toggleDarkMode}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${uiPrefs.darkMode ? 'bg-jiu-primary' : 'bg-gray-200'}`}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${darkMode ? 'bg-jiu-primary' : 'bg-gray-200'}`}
                   >
                       <span className="sr-only">Use setting</span>
                       <span
                         aria-hidden="true"
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${uiPrefs.darkMode ? 'translate-x-5' : 'translate-x-0'}`}
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${darkMode ? 'translate-x-5' : 'translate-x-0'}`}
                       />
                   </button>
               </div>
