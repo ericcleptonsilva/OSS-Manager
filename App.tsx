@@ -58,6 +58,11 @@ const App = () => {
   const [isDeleteTrainingModalOpen, setIsDeleteTrainingModalOpen] = useState(false);
   const [trainingToDelete, setTrainingToDelete] = useState<string | null>(null);
 
+  // Migration Auth State
+  const [isMigrationAuthModalOpen, setIsMigrationAuthModalOpen] = useState(false);
+  const [migrationAuthEmail, setMigrationAuthEmail] = useState('');
+  const [migrationAuthPassword, setMigrationAuthPassword] = useState('');
+
   // Financial States
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [newTransaction, setNewTransaction] = useState<Partial<FinancialTransaction>>({ type: FinancialType.MONTHLY, amount: 0 });
@@ -650,6 +655,60 @@ const App = () => {
     return age;
   };
 
+  const handleConfirmMigration = async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      const targetAcademyId = newStudent.academyId;
+      if (!targetAcademyId) return;
+
+      const targetAcademy = data.academies.find(a => a.id === targetAcademyId);
+      if (!targetAcademy) {
+          alert("Academia de destino não encontrada.");
+          return;
+      }
+
+      // Check credentials provided in modal
+      // 1. Check against Academy Allowed Emails + Password
+      let isValid = false;
+      if (targetAcademy.allowedEmails && targetAcademy.adminPassword) {
+          const normalizedAllowed = targetAcademy.allowedEmails.map(e => e.trim().toLowerCase());
+          const normalizedInput = migrationAuthEmail.trim().toLowerCase();
+
+          if (normalizedAllowed.includes(normalizedInput) && targetAcademy.adminPassword === migrationAuthPassword) {
+              isValid = true;
+          }
+      }
+
+      // 2. Fallback: Check against Global Admin (if they happen to know it)
+      if (!isValid && data.team.adminEmail && data.team.adminPassword) {
+           if (data.team.adminEmail.toLowerCase() === migrationAuthEmail.trim().toLowerCase() && data.team.adminPassword === migrationAuthPassword) {
+               isValid = true;
+           }
+      }
+
+      if (isValid) {
+          // Proceed with Save
+          try {
+            const studentToSave = { ...newStudent, academyId: targetAcademyId };
+            await ParseService.saveStudent(studentToSave);
+            await refreshData();
+            setNewStudent({ belt: BeltColor.WHITE, degrees: 0 });
+
+            setIsMigrationAuthModalOpen(false);
+            setMigrationAuthEmail('');
+            setMigrationAuthPassword('');
+
+            setIsStudentModalOpen(false);
+            showNotification('Migração realizada com sucesso!');
+          } catch (e) {
+            alert("Erro ao realizar migração.");
+            console.error(e);
+          }
+      } else {
+          alert("Credenciais inválidas para a academia de destino.");
+      }
+  };
+
   const handleSaveStudent = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -657,6 +716,42 @@ const App = () => {
     const targetAcademyId = newStudent.academyId || selectedAcademyId;
 
     if (!newStudent.name || !targetAcademyId) return;
+
+    // Check for Migration Auth Requirement
+    // Only if:
+    // 1. It is an existing student (Edit Mode) -> Actually, creating a new student in another academy might also need auth, but usually that's done by Admin.
+    //    Let's focus on moving existing students as requested.
+    // 2. The target academy is DIFFERENT from the original/current context
+    // 3. User is NOT Admin (Admins have global access)
+    // 4. Current User (Professor) is NOT authorized in the target academy
+
+    // Determine original academy ID. If editing, it's in the original object. If creating, it's null/undefined initially or current context.
+    // We can check if newStudent.id exists (Edit)
+    const isMigration = newStudent.id && newStudent.academyId && newStudent.academyId !== selectedAcademyId;
+
+    if (isMigration && userRole !== 'admin') {
+        const targetAcademy = data.academies.find(a => a.id === targetAcademyId);
+
+        // Get current user email. Try Parse User first, then fallback to loginEmail state if session persists
+        const currentUser = ParseService.getCurrentUser();
+        const currentEmail = currentUser?.get('email') || loginEmail;
+
+        let isAuthorized = false;
+        if (targetAcademy && targetAcademy.allowedEmails) {
+             const normalizedAllowed = targetAcademy.allowedEmails.map(e => e.trim().toLowerCase());
+             const normalizedCurrent = currentEmail.trim().toLowerCase();
+             if (normalizedAllowed.includes(normalizedCurrent)) {
+                 isAuthorized = true;
+             }
+        }
+
+        if (!isAuthorized) {
+            // Require Auth
+            setIsMigrationAuthModalOpen(true);
+            return; // Stop Save
+        }
+    }
+
     try {
         const studentToSave = { ...newStudent, academyId: targetAcademyId };
         await ParseService.saveStudent(studentToSave);
@@ -2332,6 +2427,75 @@ const App = () => {
               {newTransaction.id && !newTransaction.id.startsWith('fin-') ? "Salvar Alterações" : "Confirmar"}
             </button>
           </div>
+        </form>
+      </Modal>
+
+      {/* Migration Auth Modal */}
+      <Modal
+        isOpen={isMigrationAuthModalOpen}
+        onClose={() => setIsMigrationAuthModalOpen(false)}
+        title="Autorizar Migração"
+      >
+        <div className="flex flex-col items-center mb-6">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                <IconLock className="w-8 h-8 text-blue-600" />
+            </div>
+            <p className="text-gray-600 text-sm text-center">
+                Você está movendo este aluno para uma academia que você não gerencia.
+                <br/><span className="font-bold text-gray-800">Insira as credenciais da academia de destino para confirmar.</span>
+            </p>
+        </div>
+
+        <form onSubmit={handleConfirmMigration} className="space-y-4">
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email (Academia de Destino)</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <IconMail className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                        type="email"
+                        required
+                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="email@professor-destino.com"
+                        value={migrationAuthEmail}
+                        onChange={(e) => setMigrationAuthEmail(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <IconLock className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                        type="password"
+                        required
+                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="••••••"
+                        value={migrationAuthPassword}
+                        onChange={(e) => setMigrationAuthPassword(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            <div className="pt-2 flex gap-3">
+                <button
+                    type="button"
+                    onClick={() => setIsMigrationAuthModalOpen(false)}
+                    className="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-bold text-sm"
+                >
+                    Cancelar
+                </button>
+                <button
+                    type="submit"
+                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm shadow-md"
+                >
+                    Confirmar Migração
+                </button>
+            </div>
         </form>
       </Modal>
 
