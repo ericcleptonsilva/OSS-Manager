@@ -3,6 +3,15 @@ import Parse from 'parse';
 import { AppData, Academy, Student, TrainingSession, FinancialTransaction, Team, BeltColor } from '../types';
 import { INITIAL_DATA } from '../constants';
 
+// --- CONSTANTS ---
+const PARSE_CLASSES = {
+  TEAM: 'Team',
+  ACADEMY: 'Academy',
+  STUDENT: 'Student',
+  TRAINING_SESSION: 'TrainingSession',
+  FINANCIAL_TRANSACTION: 'FinancialTransaction',
+};
+
 // --- CONFIGURAÇÃO ---
 // IMPORTANTE: Substitua estas chaves pelas chaves do seu painel no Back4App
 const PARSE_APP_ID = 'tSwKlqOexCKWESqHycKZLhia9AKM41Dhg4UW6v1p';
@@ -100,7 +109,7 @@ export const getCurrentUser = () => {
 // Função para popular o DB com dados iniciais se estiver vazio
 export const seedInitialData = async () => {
     // Verifica se já existem academias
-    const query = new Parse.Query('Academy');
+    const query = new Parse.Query(PARSE_CLASSES.ACADEMY);
     const count = await query.count();
     
     if (count > 0) return; // Já tem dados, não faz nada
@@ -108,7 +117,7 @@ export const seedInitialData = async () => {
     console.log("Semeando banco de dados com dados iniciais...");
 
     // 1. Salvar Time
-    const TeamClass = Parse.Object.extend('Team');
+    const TeamClass = Parse.Object.extend(PARSE_CLASSES.TEAM);
     const team = new TeamClass();
     team.set('name', INITIAL_DATA.team.name);
     team.set('description', INITIAL_DATA.team.description);
@@ -119,7 +128,7 @@ export const seedInitialData = async () => {
     const createdAcademies: Record<string, Parse.Object> = {};
     
     for (const acData of INITIAL_DATA.academies) {
-        const acObj = new Parse.Object('Academy');
+        const acObj = new Parse.Object(PARSE_CLASSES.ACADEMY);
         acObj.set('name', acData.name);
         acObj.set('address', acData.address);
         acObj.set('instructorName', acData.instructorName);
@@ -133,7 +142,7 @@ export const seedInitialData = async () => {
     const createdStudents: Record<string, Parse.Object> = {};
 
     for (const stData of INITIAL_DATA.students) {
-        const stObj = new Parse.Object('Student');
+        const stObj = new Parse.Object(PARSE_CLASSES.STUDENT);
         stObj.set('name', stData.name);
         stObj.set('email', stData.email);
         stObj.set('belt', stData.belt);
@@ -159,7 +168,7 @@ export const seedInitialData = async () => {
 export const fetchFullData = async (): Promise<AppData> => {
   try {
     // 1. Fetch Team (Singleton for this app mostly)
-    const teamQuery = new Parse.Query('Team');
+    const teamQuery = new Parse.Query(PARSE_CLASSES.TEAM);
     const teamObj = await teamQuery.first();
     let team: Team;
     
@@ -178,22 +187,22 @@ export const fetchFullData = async (): Promise<AppData> => {
     }
 
     // 2. Fetch Academies
-    const academyQuery = new Parse.Query('Academy');
+    const academyQuery = new Parse.Query(PARSE_CLASSES.ACADEMY);
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapAcademy);
 
     // 3. Fetch Students
-    const studentQuery = new Parse.Query('Student');
+    const studentQuery = new Parse.Query(PARSE_CLASSES.STUDENT);
     const studentObjs = await studentQuery.limit(1000).find();
     const students = studentObjs.map(mapStudent);
 
     // 4. Fetch Trainings & Financials and attach to Academies
     // Note: Em um app maior, faríamos isso sob demanda, mas aqui vamos carregar tudo para manter a estrutura do App.tsx
     
-    const trainingQuery = new Parse.Query('TrainingSession');
+    const trainingQuery = new Parse.Query(PARSE_CLASSES.TRAINING_SESSION);
     const trainingObjs = await trainingQuery.limit(1000).descending('date').find();
     
-    const financialQuery = new Parse.Query('FinancialTransaction');
+    const financialQuery = new Parse.Query(PARSE_CLASSES.FINANCIAL_TRANSACTION);
     const financialObjs = await financialQuery.limit(1000).descending('dueDate').find();
 
     // Distribute data to academies
@@ -245,7 +254,7 @@ export const fetchFullData = async (): Promise<AppData> => {
 export const fetchPublicData = async (): Promise<{ team: Team, academies: Academy[] }> => {
   try {
     // 1. Fetch Team
-    const teamQuery = new Parse.Query('Team');
+    const teamQuery = new Parse.Query(PARSE_CLASSES.TEAM);
     const teamObj = await teamQuery.first();
     let team: Team;
 
@@ -264,7 +273,7 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
     }
 
     // 2. Fetch Academies (Basic Info Only)
-    const academyQuery = new Parse.Query('Academy');
+    const academyQuery = new Parse.Query(PARSE_CLASSES.ACADEMY);
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapPublicAcademy);
 
@@ -279,7 +288,7 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
 // --- SAVING FUNCTIONS ---
 
 export const saveStudent = async (studentData: Partial<Student>) => {
-  const StudentClass = Parse.Object.extend('Student');
+  const StudentClass = Parse.Object.extend(PARSE_CLASSES.STUDENT);
   const student = new StudentClass();
 
   if (studentData.id && !studentData.id.startsWith('st-')) {
@@ -302,7 +311,7 @@ export const saveStudent = async (studentData: Partial<Student>) => {
 
   // Pointer to Academy
   if (studentData.academyId) {
-    const AcademyClass = Parse.Object.extend('Academy');
+    const AcademyClass = Parse.Object.extend(PARSE_CLASSES.ACADEMY);
     const academy = new AcademyClass();
     academy.id = studentData.academyId;
     student.set('academy', academy);
@@ -313,7 +322,7 @@ export const saveStudent = async (studentData: Partial<Student>) => {
 };
 
 export const saveAcademy = async (academyData: Partial<Academy>) => {
-  const AcademyClass = Parse.Object.extend('Academy');
+  const AcademyClass = Parse.Object.extend(PARSE_CLASSES.ACADEMY);
   const academy = new AcademyClass();
 
   if (academyData.id && !academyData.id.startsWith('ac-')) {
@@ -339,7 +348,7 @@ export const saveAcademy = async (academyData: Partial<Academy>) => {
 };
 
 export const saveTraining = async (trainingData: Partial<TrainingSession>, academyId: string) => {
-  const TrainingClass = Parse.Object.extend('TrainingSession');
+  const TrainingClass = Parse.Object.extend(PARSE_CLASSES.TRAINING_SESSION);
   const training = new TrainingClass();
 
   if (trainingData.id && !trainingData.id.startsWith('tr-')) {
@@ -353,7 +362,7 @@ export const saveTraining = async (trainingData: Partial<TrainingSession>, acade
   training.set('media', trainingData.media); // Saving base64 arrays directly (caution with size)
   training.set('studentIds', trainingData.studentIds);
 
-  const AcademyClass = Parse.Object.extend('Academy');
+  const AcademyClass = Parse.Object.extend(PARSE_CLASSES.ACADEMY);
   const academy = new AcademyClass();
   academy.id = academyId;
   training.set('academy', academy);
@@ -363,7 +372,7 @@ export const saveTraining = async (trainingData: Partial<TrainingSession>, acade
 };
 
 export const saveTransaction = async (txData: Partial<FinancialTransaction>) => {
-  const TransactionClass = Parse.Object.extend('FinancialTransaction');
+  const TransactionClass = Parse.Object.extend(PARSE_CLASSES.FINANCIAL_TRANSACTION);
   const tx = new TransactionClass();
 
   if (txData.id && !txData.id.startsWith('fin-')) {
@@ -377,7 +386,7 @@ export const saveTransaction = async (txData: Partial<FinancialTransaction>) => 
   tx.set('description', txData.description);
 
   if (txData.studentId) {
-    const StudentClass = Parse.Object.extend('Student');
+    const StudentClass = Parse.Object.extend(PARSE_CLASSES.STUDENT);
     const student = new StudentClass();
     student.id = txData.studentId;
     tx.set('student', student);
@@ -396,10 +405,10 @@ export const deleteObject = async (className: string, objectId: string) => {
 
 export const deleteAllTransactionsForStudent = async (studentId: string) => {
   // Query all transactions for this student
-  const TransactionClass = Parse.Object.extend('FinancialTransaction');
+  const TransactionClass = Parse.Object.extend(PARSE_CLASSES.FINANCIAL_TRANSACTION);
   const query = new Parse.Query(TransactionClass);
   
-  const StudentClass = Parse.Object.extend('Student');
+  const StudentClass = Parse.Object.extend(PARSE_CLASSES.STUDENT);
   const student = new StudentClass();
   student.id = studentId;
   
@@ -411,7 +420,7 @@ export const deleteAllTransactionsForStudent = async (studentId: string) => {
 };
 
 export const saveTeam = async (teamData: Partial<Team>) => {
-    const TeamClass = Parse.Object.extend('Team');
+    const TeamClass = Parse.Object.extend(PARSE_CLASSES.TEAM);
     let team;
 
     // Se tiver ID, usa. Senão, tenta buscar o primeiro registro de Team (Single Team App)
@@ -469,7 +478,7 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
         }
 
         // 2. Try Team Admin Login
-        const teamQuery = new Parse.Query('Team');
+        const teamQuery = new Parse.Query(PARSE_CLASSES.TEAM);
         const team = await teamQuery.first();
         if (team) {
             const teamEmail = team.get('adminEmail');
@@ -489,7 +498,7 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
         }
 
         // 3. Try Academy Login
-        const academyQuery = new Parse.Query('Academy');
+        const academyQuery = new Parse.Query(PARSE_CLASSES.ACADEMY);
         // We can't query inside arrays easily for email with simple equality without knowing exact structure,
         // so we fetch academies where this email *might* be allowed or just iterate.
         // For security/performance in real app, use Cloud Code. Here we iterate client side safely enough for this scope.
@@ -516,7 +525,7 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
         }
 
         // 4. Try Student Login
-        const studentQuery = new Parse.Query('Student');
+        const studentQuery = new Parse.Query(PARSE_CLASSES.STUDENT);
         studentQuery.equalTo('email', email);
         studentQuery.equalTo('password', pass);
         const student = await studentQuery.first();
