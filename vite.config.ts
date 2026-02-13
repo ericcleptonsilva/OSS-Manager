@@ -17,7 +17,10 @@ export default defineConfig(({ mode }) => {
           protocolImports: true,
         }),
       ],
-      // REMOVED: Insecure injection of API Key
+      define: {
+        'process.env.API_KEY': JSON.stringify(''),
+        'process.env.GEMINI_API_KEY': JSON.stringify('')
+      },
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
