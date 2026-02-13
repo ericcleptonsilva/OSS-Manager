@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
           protocolImports: true,
         }),
       ],
+      // REMOVED: Insecure injection of API Key
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
