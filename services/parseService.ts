@@ -158,7 +158,7 @@ export const seedInitialData = async () => {
 
 // Função principal para carregar TODOS os dados e montar a estrutura AppData
 // Isso substitui o carregamento do localStorage
-export const fetchFullData = async (): Promise<AppData> => {
+export const fetchFullData = async (role: string = 'admin', email: string = ''): Promise<AppData> => {
   try {
     // 1. Fetch Team (Singleton for this app mostly)
     const teamQuery = new Parse.Query('Team');
@@ -180,13 +180,55 @@ export const fetchFullData = async (): Promise<AppData> => {
       team = INITIAL_DATA.team; // Fallback
     }
 
+    // --- SECURITY & FILTERING LOGIC ---
+    let targetAcademyId: string | null = null;
+
+    // IF STUDENT: Find their academy first
+    if (role === 'student') {
+         const meQuery = new Parse.Query('Student');
+         // Case insensitive email match for student
+         meQuery.matches('email', new RegExp(`^${email}$`, 'i'));
+         meQuery.include('academy');
+         const me = await meQuery.first();
+         if (me && me.get('academy')) {
+             targetAcademyId = me.get('academy').id;
+         } else {
+             // Student not found or no academy? Return minimal data.
+             return { team, academies: [], students: [] };
+         }
+    }
+
     // 2. Fetch Academies
     const academyQuery = new Parse.Query('Academy');
+
+    if (role === 'professor') {
+        // Professor sees only academies where they are allowed
+        academyQuery.equalTo('allowedEmails', email);
+    } else if (role === 'student' && targetAcademyId) {
+        academyQuery.equalTo('objectId', targetAcademyId);
+    }
+
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapAcademy);
 
+    // If no academies found for restricted roles, return empty.
+    if ((role === 'professor' || role === 'student') && academies.length === 0) {
+        return { team, academies: [], students: [] };
+    }
+
     // 3. Fetch Students
     const studentQuery = new Parse.Query('Student');
+
+    if (role === 'student') {
+        // Student sees ONLY THEMSELVES
+        studentQuery.matches('email', new RegExp(`^${email}$`, 'i'));
+    } else if (role === 'professor') {
+        // Professor sees students in their academies
+        const academyPtrs = academyObjs.map(a => a.toPointer());
+        studentQuery.containedIn('academy', academyPtrs);
+    }
+    // Admin sees all (no filter)
+
     const studentObjs = await studentQuery.limit(1000).find();
     const students = studentObjs.map(mapStudent);
 
@@ -194,9 +236,41 @@ export const fetchFullData = async (): Promise<AppData> => {
     // Note: Em um app maior, faríamos isso sob demanda, mas aqui vamos carregar tudo para manter a estrutura do App.tsx
     
     const trainingQuery = new Parse.Query('TrainingSession');
+
+    if (role === 'student' && targetAcademyId) {
+        // Students see trainings of their academy
+        const acPtr = new Parse.Object('Academy');
+        acPtr.id = targetAcademyId;
+        trainingQuery.equalTo('academy', acPtr);
+    } else if (role === 'professor') {
+         const academyPtrs = academyObjs.map(a => a.toPointer());
+         trainingQuery.containedIn('academy', academyPtrs);
+    }
+
     const trainingObjs = await trainingQuery.limit(1000).descending('date').find();
     
     const financialQuery = new Parse.Query('FinancialTransaction');
+
+    if (role === 'student') {
+        // Student sees ONLY their own financials
+        if (studentObjs.length > 0) {
+             const studentPtrs = studentObjs.map(s => s.toPointer());
+             financialQuery.containedIn('student', studentPtrs);
+        } else {
+             // Safety: If no student found, return no financials
+             financialQuery.containedIn('objectId', []);
+        }
+    } else if (role === 'professor') {
+        // Professor sees financials for students in their academy.
+        if (studentObjs.length > 0) {
+            const studentPtrs = studentObjs.map(s => s.toPointer());
+            financialQuery.containedIn('student', studentPtrs);
+        } else {
+            // Safety: If no students found, return no financials
+            financialQuery.containedIn('objectId', []);
+        }
+    }
+
     const financialObjs = await financialQuery.limit(1000).descending('dueDate').find();
 
     // Distribute data to academies
