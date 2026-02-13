@@ -652,9 +652,13 @@ const App = () => {
 
   const handleSaveStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudent.name || !selectedAcademyId) return;
+
+    // Use the academyId from the form if provided (migration), otherwise use the currently selected academy context
+    const targetAcademyId = newStudent.academyId || selectedAcademyId;
+
+    if (!newStudent.name || !targetAcademyId) return;
     try {
-        const studentToSave = { ...newStudent, academyId: selectedAcademyId };
+        const studentToSave = { ...newStudent, academyId: targetAcademyId };
         await ParseService.saveStudent(studentToSave);
         await refreshData();
         setNewStudent({ belt: BeltColor.WHITE, degrees: 0 });
@@ -2759,6 +2763,27 @@ const App = () => {
               onChange={e => setNewStudent({...newStudent, name: e.target.value})}
             />
           </div>
+
+          {/* Admin Migration Feature */}
+          {userRole === 'admin' && (
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                  <label className="block text-sm font-bold text-blue-800 mb-1">Academia (Migração)</label>
+                  <select
+                      className="w-full rounded-lg border-blue-300 border p-2.5 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                      value={newStudent.academyId || selectedAcademyId || ''}
+                      onChange={e => setNewStudent({...newStudent, academyId: e.target.value})}
+                  >
+                      {data.academies.map(academy => (
+                          <option key={academy.id} value={academy.id}>
+                              {academy.name}
+                          </option>
+                      ))}
+                  </select>
+                  <p className="text-xs text-blue-600 mt-1">
+                      Alterar a academia moverá o aluno e seu histórico para a nova unidade.
+                  </p>
+              </div>
+          )}
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
