@@ -23,6 +23,7 @@ const App = () => {
   const [userRole, setUserRole] = useState<UserRole>('admin');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isPublicDataLoaded, setIsPublicDataLoaded] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -90,6 +91,7 @@ const App = () => {
             team: publicData.team,
             academies: publicData.academies
         }));
+        setIsPublicDataLoaded(true);
     });
 
     const currentUser = ParseService.getCurrentUser();
@@ -947,6 +949,54 @@ const App = () => {
 
   // --- Render ---
 
+  // Initial Public Load Skeleton (Splash Screen)
+  if (!isPublicDataLoaded) {
+      return (
+        <div className={`min-h-screen font-sans pb-20 ${darkMode ? 'bg-jiu-dark' : 'bg-gray-50'}`}>
+            {/* Header Skeleton */}
+            <div className="h-20 bg-gray-800 shadow-lg border-b border-gray-700 animate-pulse mb-8"></div>
+
+            <main className="container mx-auto px-4 py-8">
+                {/* Banner Skeleton - Increased Size as Requested */}
+                <div className="w-full h-64 md:h-96 bg-gray-300 dark:bg-gray-800 rounded-2xl animate-pulse mb-8 flex items-center justify-center shadow-inner">
+                    <div className="flex flex-col items-center">
+                         <IconCamera className="w-20 h-20 text-gray-400 opacity-20 mb-4" />
+                         <span className="text-gray-400 opacity-50 font-bold uppercase tracking-widest">Carregando Equipe...</span>
+                    </div>
+                </div>
+
+                {/* Title Skeleton */}
+                <div className="flex justify-between items-end mb-6">
+                    <div className="space-y-2">
+                        <div className="h-8 w-48 bg-gray-300 dark:bg-gray-800 rounded animate-pulse"></div>
+                        <div className="h-4 w-64 bg-gray-300 dark:bg-gray-800 rounded animate-pulse"></div>
+                    </div>
+                </div>
+
+                {/* Grid Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="h-64 bg-gray-300 dark:bg-gray-800 rounded-xl animate-pulse shadow-sm border border-gray-200 dark:border-gray-700 p-6 flex flex-col justify-between">
+                             <div className="flex justify-between mb-4">
+                                 <div className="w-16 h-16 bg-gray-400 dark:bg-gray-700 rounded-lg"></div>
+                                 <div className="w-20 h-6 bg-gray-400 dark:bg-gray-700 rounded"></div>
+                             </div>
+                             <div className="space-y-2">
+                                 <div className="h-6 w-3/4 bg-gray-400 dark:bg-gray-700 rounded"></div>
+                                 <div className="h-4 w-1/2 bg-gray-400 dark:bg-gray-700 rounded"></div>
+                             </div>
+                             <div className="mt-4 pt-4 border-t border-gray-400/10 flex justify-between">
+                                 <div className="h-4 w-1/3 bg-gray-400 dark:bg-gray-700 rounded"></div>
+                                 <div className="h-8 w-24 bg-gray-400 dark:bg-gray-700 rounded"></div>
+                             </div>
+                        </div>
+                    ))}
+                </div>
+            </main>
+        </div>
+      );
+  }
+
   if (isLoadingData) {
       return (
           <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
@@ -1052,7 +1102,7 @@ const App = () => {
           <div className="space-y-8 animate-fade-in">
 
             {/* --- TEAM BANNER --- */}
-            <div className={`relative w-full h-48 md:h-64 rounded-2xl overflow-hidden shadow-lg mb-8 group bg-gray-200`}>
+            <div className={`relative w-full h-64 md:h-96 rounded-2xl overflow-hidden shadow-lg mb-8 group bg-gray-200`}>
                 {data.team.banner ? (
                     <img src={data.team.banner} alt="Team Banner" className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
                 ) : (
