@@ -4,12 +4,14 @@ import { AppData, Academy, Student, TrainingSession, FinancialTransaction, Team,
 import { INITIAL_DATA } from '../constants';
 
 // --- CONFIGURAÇÃO ---
-// IMPORTANTE: Substitua estas chaves pelas chaves do seu painel no Back4App
-const PARSE_APP_ID = 'tSwKlqOexCKWESqHycKZLhia9AKM41Dhg4UW6v1p';
-const PARSE_JS_KEY = 'yQA8RsPUdifmE5ANBOmqEMqmhksYNbjYj9T0g9Sn';
+const PARSE_APP_ID = import.meta.env.VITE_PARSE_APP_ID;
+const PARSE_JS_KEY = import.meta.env.VITE_PARSE_JS_KEY;
 
 export const initializeParse = () => {
-  Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
+  if (!PARSE_APP_ID || !PARSE_JS_KEY) {
+    console.error("Parse credentials are missing in environment variables.");
+  }
+  Parse.initialize(PARSE_APP_ID || '', PARSE_JS_KEY || '');
   Parse.serverURL = 'https://parseapi.back4app.com/';
 };
 
