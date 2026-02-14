@@ -158,7 +158,7 @@ export const seedInitialData = async () => {
 
 // Função principal para carregar TODOS os dados e montar a estrutura AppData
 // Isso substitui o carregamento do localStorage
-export const fetchFullData = async (): Promise<AppData> => {
+export const fetchFullData = async (role?: string, email?: string): Promise<AppData> => {
   try {
     // 1. Fetch Team (Singleton for this app mostly)
     const teamQuery = new Parse.Query('Team');
@@ -180,23 +180,93 @@ export const fetchFullData = async (): Promise<AppData> => {
       team = INITIAL_DATA.team; // Fallback
     }
 
+    // Initialize Queries
+    let academyQuery = new Parse.Query('Academy');
+    let studentQuery = new Parse.Query('Student');
+    let trainingQuery = new Parse.Query('TrainingSession');
+    let financialQuery = new Parse.Query('FinancialTransaction');
+
+    // SECURITY: Filter data based on Role
+    if (role === 'student' && email) {
+        // --- STUDENT VIEW ---
+        // Fetch only this student
+        studentQuery.equalTo('email', email);
+        const targetStudent = await studentQuery.first();
+
+        if (targetStudent) {
+            // Re-apply filter for the main fetch
+            studentQuery = new Parse.Query('Student');
+            studentQuery.equalTo('objectId', targetStudent.id);
+
+            // Fetch only the Academy this student belongs to
+            const academyPointer = targetStudent.get('academy');
+            if (academyPointer) {
+                 academyQuery.equalTo('objectId', academyPointer.id);
+            } else {
+                 academyQuery.equalTo('objectId', 'nonexistent');
+            }
+
+            // Filter Trainings: Only trainings where studentIds contains student.id
+            trainingQuery.equalTo('studentIds', targetStudent.id);
+
+            // Filter Financials: Only for this student
+            financialQuery.equalTo('student', targetStudent);
+        } else {
+             // Student not found? Return empty.
+             academyQuery.equalTo('objectId', 'nonexistent');
+             studentQuery.equalTo('objectId', 'nonexistent');
+             trainingQuery.equalTo('objectId', 'nonexistent');
+             financialQuery.equalTo('objectId', 'nonexistent');
+        }
+
+    } else if (role === 'professor' && email) {
+        // --- PROFESSOR VIEW ---
+        // 1. Fetch Academy managed by this email (allowedEmails array contains email)
+        academyQuery.equalTo('allowedEmails', email);
+
+        // 2. We need to filter students/trainings by these academies
+        const myAcademies = await academyQuery.find();
+        const myAcademyIds = myAcademies.map(a => a.id);
+
+        if (myAcademyIds.length > 0) {
+            // Re-bind academyQuery to these IDs
+            academyQuery = new Parse.Query('Academy');
+            academyQuery.containedIn('objectId', myAcademyIds);
+
+            // Filter Students by these Academies
+            const innerAcademyQuery = new Parse.Query('Academy');
+            innerAcademyQuery.containedIn('objectId', myAcademyIds);
+            studentQuery.matchesQuery('academy', innerAcademyQuery);
+
+            // Filter Trainings by these Academies
+            trainingQuery.matchesQuery('academy', innerAcademyQuery);
+
+            // Filter Financials: Student must belong to one of these academies
+            // Financial -> Student -> Academy
+            financialQuery.matchesQuery('student', studentQuery);
+        } else {
+             academyQuery.equalTo('objectId', 'nonexistent');
+             studentQuery.equalTo('objectId', 'nonexistent');
+             trainingQuery.equalTo('objectId', 'nonexistent');
+             financialQuery.equalTo('objectId', 'nonexistent');
+        }
+    }
+    // Else (Admin or undefined): Fetch All (Default behavior)
+
+
     // 2. Fetch Academies
-    const academyQuery = new Parse.Query('Academy');
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapAcademy);
 
     // 3. Fetch Students
-    const studentQuery = new Parse.Query('Student');
     const studentObjs = await studentQuery.limit(1000).find();
     const students = studentObjs.map(mapStudent);
 
     // 4. Fetch Trainings & Financials and attach to Academies
     // Note: Em um app maior, faríamos isso sob demanda, mas aqui vamos carregar tudo para manter a estrutura do App.tsx
     
-    const trainingQuery = new Parse.Query('TrainingSession');
     const trainingObjs = await trainingQuery.limit(1000).descending('date').find();
     
-    const financialQuery = new Parse.Query('FinancialTransaction');
     const financialObjs = await financialQuery.limit(1000).descending('dueDate').find();
 
     // Distribute data to academies

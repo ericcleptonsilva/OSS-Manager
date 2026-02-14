@@ -121,8 +121,26 @@ const App = () => {
   // Fetch Data when Authenticated
   const refreshData = async () => {
     if (!isAuthenticated) return;
+
+    // Determine User Context for Secure Fetch
+    let currentEmail = '';
+    let currentRole = userRole;
+
+    const currentUser = ParseService.getCurrentUser();
+    if (currentUser) {
+        currentEmail = currentUser.get('email') || '';
+    } else {
+        const stored = localStorage.getItem('oss_custom_session');
+        if (stored) {
+             const s = JSON.parse(stored);
+             currentEmail = s.email;
+             currentRole = s.role;
+        }
+    }
+
     setIsLoadingData(true);
-    const cloudData = await ParseService.fetchFullData();
+    // Pass context to enforce server-side filtering
+    const cloudData = await ParseService.fetchFullData(currentRole, currentEmail);
     setData(cloudData);
     setIsLoadingData(false);
   };
@@ -178,7 +196,8 @@ const App = () => {
   const checkUserRoleAndLoadData = async (email: string, explicitRole?: UserRole) => {
       setIsAuthenticated(true);
       
-      const fetchedData = await ParseService.fetchFullData();
+      // Pass the role and email to filter data immediately
+      const fetchedData = await ParseService.fetchFullData(explicitRole || 'admin', email);
       setData(fetchedData);
 
       // 1. Try to find if it is a student
