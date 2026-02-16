@@ -10,6 +10,15 @@ const distPath = join(__dirname, 'dist');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Security Headers Middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
 console.log(`Iniciando servidor na porta ${PORT}...`);
 console.log(`Procurando arquivos em: ${distPath}`);
 
