@@ -16,8 +16,20 @@ console.log(`Procurando arquivos em: ${distPath}`);
 // Verifica se o build funcionou
 if (fs.existsSync(distPath)) {
     console.log("SUCESSO: Pasta dist encontrada.");
+
+    // Security Headers Middleware
+    app.use((req, res, next) => {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://parseapi.back4app.com;");
+        next();
+    });
+
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    // Express 5 regex wildcard for SPA fallback
+    app.get(/.*/, (req, res) => {
         res.sendFile(join(distPath, 'index.html'));
     });
 } else {
