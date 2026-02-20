@@ -103,8 +103,10 @@ const App = () => {
       // But in our custom flow, we use 'role' on the object.
       let role = currentUser.get('role') as UserRole;
       if (!role) {
-          // Default to Admin for standard Parse Users (Owners) if no role is explicitly set
-          role = 'admin';
+          // FAIL-SAFE: If no role is defined, default to 'student' (least privilege) instead of 'admin'.
+          // Legitimate admins MUST have role='admin' set in their Parse User object.
+          console.warn("Security: User has no role defined. Defaulting to restricted access.");
+          role = 'student';
       }
       checkUserRoleAndLoadData(email, role);
     } else {
@@ -122,7 +124,30 @@ const App = () => {
   const refreshData = async () => {
     if (!isAuthenticated) return;
     setIsLoadingData(true);
-    const cloudData = await ParseService.fetchFullData();
+
+    let email = '';
+    let role = userRole;
+
+    // Retrieve authoritative credentials to ensure we don't use stale state
+    const currentUser = ParseService.getCurrentUser();
+    if (currentUser) {
+        email = currentUser.get('email') || '';
+        const r = currentUser.get('role');
+        if (r) role = r;
+        else {
+             // FAIL-SAFE
+             role = 'student';
+        }
+    } else {
+        const stored = localStorage.getItem('oss_custom_session');
+        if (stored) {
+             const s = JSON.parse(stored);
+             email = s.email;
+             role = s.role;
+        }
+    }
+
+    const cloudData = await ParseService.fetchFullData(email, role);
     setData(cloudData);
     setIsLoadingData(false);
   };
@@ -178,7 +203,8 @@ const App = () => {
   const checkUserRoleAndLoadData = async (email: string, explicitRole?: UserRole) => {
       setIsAuthenticated(true);
       
-      const fetchedData = await ParseService.fetchFullData();
+      const roleToUse = explicitRole || 'admin';
+      const fetchedData = await ParseService.fetchFullData(email, roleToUse);
       setData(fetchedData);
 
       // 1. Try to find if it is a student
@@ -218,8 +244,9 @@ const App = () => {
 
         let role = user.get('role') as UserRole;
         if (!role) {
-             // If no role field (Standard Parse User), assume Admin
-             role = 'admin';
+             // FAIL-SAFE: Default to student if no role found
+             console.warn("Security: User has no role. Defaulting to student.");
+             role = 'student';
         }
 
         // Persist session locally for non-Parse users (Mock users)
