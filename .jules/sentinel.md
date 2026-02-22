@@ -8,3 +8,8 @@
 **Vulnerability:** The application's data fetching logic ('fetchFullData') relied on client-side filtering and defaulted users without a role to 'admin'. Additionally, the initial fix implementation was "Fail-Open", meaning if a student's email was missing, the filter was skipped and they received full access.
 **Learning:** Security logic must always "Fail-Closed". If a condition for restricted access isn't met (e.g., missing email), access should be denied, not granted. Furthermore, defaulting undefined roles to the highest privilege ('admin') is a critical design flaw.
 **Prevention:** Always implement an explicit "Deny All" or "Fetch Nothing" else block. Never default to 'admin' for undefined roles; default to 'guest' or 'student' (least privilege). Validate inputs for RBAC filters before executing queries.
+
+## 2026-02-14 - [Missing Security Headers]
+**Vulnerability:** The application server (Express) was not sending standard HTTP security headers, leaving it vulnerable to clickjacking, MIME sniffing, and other common attacks.
+**Learning:** Default Express configurations do not include security headers. They must be explicitly added, either manually or via libraries like `helmet`.
+**Prevention:** Always include a middleware to set `X-Frame-Options`, `X-Content-Type-Options`, `HSTS`, etc., in any Node.js server entry point.
