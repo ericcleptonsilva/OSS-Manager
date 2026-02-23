@@ -10,6 +10,18 @@ const distPath = join(__dirname, 'dist');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// SECURITY: Disable x-powered-by header to prevent leaking server info
+app.disable('x-powered-by');
+
+// SECURITY: Add security headers
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+});
+
 console.log(`Iniciando servidor na porta ${PORT}...`);
 console.log(`Procurando arquivos em: ${distPath}`);
 
@@ -17,14 +29,14 @@ console.log(`Procurando arquivos em: ${distPath}`);
 if (fs.existsSync(distPath)) {
     console.log("SUCESSO: Pasta dist encontrada.");
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get(/.*/, (req, res) => {
         res.sendFile(join(distPath, 'index.html'));
     });
 } else {
     // SE O BUILD FALHOU, O SERVER SOBE COM UMA MENSAGEM DE ERRO
     // Isso evita o crash do Cloud Run e permite você ler o erro na tela.
     console.error("ERRO CRÍTICO: Pasta dist não existe!");
-    app.get('*', (req, res) => {
+    app.get(/.*/, (req, res) => {
         res.status(500).send(`
             <h1>Erro de Build</h1>
             <p>O servidor subiu, mas a pasta <b>dist</b> não foi encontrada.</p>
