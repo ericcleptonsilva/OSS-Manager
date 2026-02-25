@@ -10,12 +10,11 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# 3. Instala o servidor estático profissional 'serve'
-RUN npm install -g serve
+# 3. Limpeza de dependências (opcional, mas bom pra imagem final)
+# Se quisermos ser mais eficientes, poderíamos remover devDependencies, mas vamos manter simples por agora.
 
 # 4. Expõe a porta 8080 (Padrão do Google)
 EXPOSE 8080
 
-# 5. Inicia o servidor apontando para a pasta 'dist' na porta 8080
-# O flag '-s' garante que rotas do React (SPA) funcionem sem erro 404
-CMD ["serve", "-s", "dist", "-l", "8080"]
+# 5. Inicia o servidor customizado com Express (mais seguro que 'serve')
+CMD ["node", "server.js"]
