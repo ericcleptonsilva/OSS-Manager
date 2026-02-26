@@ -8,3 +8,8 @@
 **Vulnerability:** The application's data fetching logic ('fetchFullData') relied on client-side filtering and defaulted users without a role to 'admin'. Additionally, the initial fix implementation was "Fail-Open", meaning if a student's email was missing, the filter was skipped and they received full access.
 **Learning:** Security logic must always "Fail-Closed". If a condition for restricted access isn't met (e.g., missing email), access should be denied, not granted. Furthermore, defaulting undefined roles to the highest privilege ('admin') is a critical design flaw.
 **Prevention:** Always implement an explicit "Deny All" or "Fetch Nothing" else block. Never default to 'admin' for undefined roles; default to 'guest' or 'student' (least privilege). Validate inputs for RBAC filters before executing queries.
+
+## 2026-02-26 - [Hidden Server Logic Mismatch]
+**Vulnerability:** Security logic implemented in `server.js` (headers, error sanitization) was bypassed in production because `Dockerfile` used `serve` instead. Additionally, `server.js` was broken due to Express 5 syntax changes, meaning it would have crashed if deployed.
+**Learning:** Dockerfiles often deviate from local dev scripts. Security enhancements in server code are useless if the container entrypoint ignores that code. Dependencies like `express` can have breaking changes (v4 -> v5) that silently break unused server scripts.
+**Prevention:** Always verify the `CMD` or `ENTRYPOINT` in `Dockerfile`. Ensure production entrypoints match the intended secure server implementation. Run the production container locally to verify behavior.
