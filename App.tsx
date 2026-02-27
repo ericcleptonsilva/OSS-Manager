@@ -2507,7 +2507,7 @@ const App = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Senha do Admin</label>
                 <input
-                  type="password"
+                  type="text"
                   className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
                   placeholder="Definir senha de acesso"
                   value={newTeam.adminPassword || ''}
@@ -2657,7 +2657,7 @@ const App = () => {
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
                 <input
-                type="password"
+                type="text"
                 className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary outline-none bg-white text-gray-900"
                 placeholder="Senha de acesso"
                 value={newAcademy.adminPassword || ''}
@@ -2906,7 +2906,7 @@ const App = () => {
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Senha (Login)</label>
                 <input
-                type="password"
+                type="text"
                 className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
                 placeholder="Definir senha"
                 value={newStudent.password || ''}
