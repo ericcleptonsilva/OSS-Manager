@@ -158,7 +158,7 @@ export const seedInitialData = async () => {
 
 // Função principal para carregar TODOS os dados e montar a estrutura AppData
 // Isso substitui o carregamento do localStorage
-export const fetchFullData = async (userEmail?: string, userRole?: string): Promise<AppData> => {
+export const fetchFullData = async (): Promise<AppData> => {
   try {
     // 1. Fetch Team (Singleton for this app mostly)
     const teamQuery = new Parse.Query('Team');
@@ -185,76 +185,19 @@ export const fetchFullData = async (userEmail?: string, userRole?: string): Prom
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapAcademy);
 
-    // Identify Context based on Role
-    let professorAcademyObj: Parse.Object | null = null;
-    if (userRole === 'professor' && userEmail) {
-        professorAcademyObj = academyObjs.find(ac => {
-            const allowed = ac.get('allowedEmails') || [];
-            return allowed.map((e: string) => e.trim().toLowerCase()).includes(userEmail.trim().toLowerCase());
-        }) || null;
-    }
+    // 3. Fetch Students
+    const studentQuery = new Parse.Query('Student');
+    const studentObjs = await studentQuery.limit(1000).find();
+    const students = studentObjs.map(mapStudent);
 
-    // Initialize arrays
-    let studentObjs: Parse.Object[] = [];
-    let students: Student[] = [];
-    let trainingObjs: Parse.Object[] = [];
-    let financialObjs: Parse.Object[] = [];
-
-    // --- FAIL-CLOSED LOGIC ---
-    if (userRole === 'admin') {
-        // ADMIN: Fetch All
-        const studentQuery = new Parse.Query('Student');
-        studentObjs = await studentQuery.limit(1000).find();
-        students = studentObjs.map(mapStudent);
-
-        const trainingQuery = new Parse.Query('TrainingSession');
-        trainingObjs = await trainingQuery.limit(1000).descending('date').find();
-
-        const financialQuery = new Parse.Query('FinancialTransaction');
-        financialObjs = await financialQuery.limit(1000).descending('dueDate').find();
-
-    } else if (userRole === 'student' && userEmail) {
-        // STUDENT: Fetch Only Self and Related
-        const studentQuery = new Parse.Query('Student');
-        studentQuery.equalTo('email', userEmail);
-        studentObjs = await studentQuery.limit(1000).find();
-        students = studentObjs.map(mapStudent);
-
-        const currentStudentObj = studentObjs.length > 0 ? studentObjs[0] : null;
-
-        if (currentStudentObj) {
-            const trainingQuery = new Parse.Query('TrainingSession');
-            // Filter trainings for the student's academy
-            if (currentStudentObj.get('academy')) {
-                trainingQuery.equalTo('academy', currentStudentObj.get('academy'));
-                trainingObjs = await trainingQuery.limit(1000).descending('date').find();
-            }
-
-            const financialQuery = new Parse.Query('FinancialTransaction');
-            financialQuery.equalTo('student', currentStudentObj);
-            financialObjs = await financialQuery.limit(1000).descending('dueDate').find();
-        }
-
-    } else if (userRole === 'professor' && professorAcademyObj) {
-        // PROFESSOR: Fetch Only Academy Data
-        const studentQuery = new Parse.Query('Student');
-        studentQuery.equalTo('academy', professorAcademyObj);
-        studentObjs = await studentQuery.limit(1000).find();
-        students = studentObjs.map(mapStudent);
-
-        const trainingQuery = new Parse.Query('TrainingSession');
-        trainingQuery.equalTo('academy', professorAcademyObj);
-        trainingObjs = await trainingQuery.limit(1000).descending('date').find();
-
-        const financialQuery = new Parse.Query('FinancialTransaction');
-        // Filter transactions for students in this academy
-        financialQuery.containedIn('student', studentObjs);
-        financialObjs = await financialQuery.limit(1000).descending('dueDate').find();
-
-    } else {
-        // UNKNOWN / GUEST / INVALID CONTEXT: Fetch Nothing Sensitive
-        // Arrays remain empty.
-    }
+    // 4. Fetch Trainings & Financials and attach to Academies
+    // Note: Em um app maior, faríamos isso sob demanda, mas aqui vamos carregar tudo para manter a estrutura do App.tsx
+    
+    const trainingQuery = new Parse.Query('TrainingSession');
+    const trainingObjs = await trainingQuery.limit(1000).descending('date').find();
+    
+    const financialQuery = new Parse.Query('FinancialTransaction');
+    const financialObjs = await financialQuery.limit(1000).descending('dueDate').find();
 
     // Distribute data to academies
     academies.forEach(ac => {
