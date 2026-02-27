@@ -2,6 +2,7 @@
 import Parse from 'parse';
 import { AppData, Academy, Student, TrainingSession, FinancialTransaction, Team, BeltColor } from '../types';
 import { INITIAL_DATA } from '../constants';
+import { isValidEmail, sanitizeString, isValidPassword } from '../utils/validation';
 
 // --- CONFIGURAÇÃO ---
 const PARSE_APP_ID = import.meta.env.VITE_PARSE_APP_ID;
@@ -281,6 +282,14 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
 // --- SAVING FUNCTIONS ---
 
 export const saveStudent = async (studentData: Partial<Student>) => {
+  // Validate Input
+  if (studentData.email && !isValidEmail(studentData.email)) {
+      throw new Error("Formato de email inválido.");
+  }
+  if (studentData.password && !isValidPassword(studentData.password)) {
+      throw new Error("A senha deve ter pelo menos 6 caracteres.");
+  }
+
   const StudentClass = Parse.Object.extend('Student');
   const student = new StudentClass();
 
@@ -288,19 +297,22 @@ export const saveStudent = async (studentData: Partial<Student>) => {
     student.id = studentData.id;
   }
 
-  student.set('name', studentData.name);
-  student.set('email', studentData.email);
-  student.set('phone', studentData.phone);
-  student.set('birthDate', studentData.birthDate);
-  student.set('startDate', studentData.startDate);
-  student.set('belt', studentData.belt);
-  student.set('degrees', studentData.degrees);
-  student.set('photo', studentData.photo);
-  if (studentData.password) student.set('password', studentData.password);
+  if (studentData.name !== undefined) student.set('name', sanitizeString(studentData.name));
+  if (studentData.email !== undefined) student.set('email', studentData.email);
+  if (studentData.phone !== undefined) student.set('phone', sanitizeString(studentData.phone));
+
+  if (studentData.birthDate !== undefined) student.set('birthDate', studentData.birthDate);
+  if (studentData.startDate !== undefined) student.set('startDate', studentData.startDate);
+  if (studentData.belt !== undefined) student.set('belt', studentData.belt);
+  if (studentData.degrees !== undefined) student.set('degrees', studentData.degrees);
+
+  if (studentData.photo !== undefined) student.set('photo', studentData.photo);
+  if (studentData.password !== undefined) student.set('password', studentData.password);
   if (studentData.progressStars !== undefined) student.set('progressStars', studentData.progressStars);
-  student.set('guardianName', studentData.guardianName);
-  student.set('guardianPhone', studentData.guardianPhone);
-  student.set('guardianCpf', studentData.guardianCpf);
+
+  if (studentData.guardianName !== undefined) student.set('guardianName', sanitizeString(studentData.guardianName));
+  if (studentData.guardianPhone !== undefined) student.set('guardianPhone', sanitizeString(studentData.guardianPhone));
+  if (studentData.guardianCpf !== undefined) student.set('guardianCpf', sanitizeString(studentData.guardianCpf));
 
   // Pointer to Academy
   if (studentData.academyId) {
@@ -322,16 +334,26 @@ export const saveAcademy = async (academyData: Partial<Academy>) => {
     academy.id = academyData.id;
   }
 
-  academy.set('name', academyData.name);
-  academy.set('address', academyData.address);
-  academy.set('instructorName', academyData.instructorName);
-  academy.set('description', academyData.description);
-  academy.set('logo', academyData.logo);
-  academy.set('schedule', academyData.schedule);
+  if (academyData.name !== undefined) academy.set('name', sanitizeString(academyData.name));
+  if (academyData.address !== undefined) academy.set('address', sanitizeString(academyData.address));
+  if (academyData.instructorName !== undefined) academy.set('instructorName', sanitizeString(academyData.instructorName));
+  if (academyData.description !== undefined) academy.set('description', sanitizeString(academyData.description));
+
+  if (academyData.logo !== undefined) academy.set('logo', academyData.logo);
+  if (academyData.schedule !== undefined) academy.set('schedule', academyData.schedule);
+
   if (academyData.allowedEmails) {
-      academy.set('allowedEmails', academyData.allowedEmails);
+      const validEmails = academyData.allowedEmails.filter(e => isValidEmail(e));
+      if (validEmails.length !== academyData.allowedEmails.length) {
+          throw new Error("Um ou mais emails fornecidos são inválidos.");
+      }
+      academy.set('allowedEmails', validEmails);
   }
+
   if (academyData.adminPassword) {
+      if (!isValidPassword(academyData.adminPassword)) {
+          throw new Error("A senha da academia deve ter pelo menos 6 caracteres.");
+      }
       academy.set('adminPassword', academyData.adminPassword);
   }
 
@@ -413,6 +435,14 @@ export const deleteAllTransactionsForStudent = async (studentId: string) => {
 };
 
 export const saveTeam = async (teamData: Partial<Team>) => {
+    // Validation
+    if (teamData.adminEmail && !isValidEmail(teamData.adminEmail)) {
+        throw new Error("Email do administrador inválido.");
+    }
+    if (teamData.adminPassword && !isValidPassword(teamData.adminPassword)) {
+         throw new Error("A senha do administrador deve ter pelo menos 6 caracteres.");
+    }
+
     const TeamClass = Parse.Object.extend('Team');
     let team;
 
@@ -433,18 +463,19 @@ export const saveTeam = async (teamData: Partial<Team>) => {
         }
     }
 
-    team.set('name', teamData.name);
-    team.set('description', teamData.description);
-    if (teamData.logo) {
+    if (teamData.name !== undefined) team.set('name', sanitizeString(teamData.name));
+    if (teamData.description !== undefined) team.set('description', sanitizeString(teamData.description));
+
+    if (teamData.logo !== undefined) {
         team.set('logo', teamData.logo);
     }
-    if (teamData.banner) {
+    if (teamData.banner !== undefined) {
         team.set('banner', teamData.banner);
     }
-    if (teamData.adminEmail) {
+    if (teamData.adminEmail !== undefined) {
         team.set('adminEmail', teamData.adminEmail);
     }
-    if (teamData.adminPassword) {
+    if (teamData.adminPassword !== undefined) {
         team.set('adminPassword', teamData.adminPassword);
     }
 
