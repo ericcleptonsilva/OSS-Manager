@@ -193,6 +193,8 @@ export const fetchFullData = async (): Promise<AppData> => {
     // Note: Em um app maior, faríamos isso sob demanda, mas aqui vamos carregar tudo para manter a estrutura do App.tsx
     
     const trainingQuery = new Parse.Query('TrainingSession');
+    // Exclude 'media' (base64) to prevent large payload and 500 errors
+    trainingQuery.exclude('media');
     const trainingObjs = await trainingQuery.limit(1000).descending('date').find();
     
     const financialQuery = new Parse.Query('FinancialTransaction');
