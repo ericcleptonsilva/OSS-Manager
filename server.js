@@ -10,6 +10,18 @@ const distPath = join(__dirname, 'dist');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Security: Disable X-Powered-By header
+app.disable('x-powered-by');
+
+// Security: Add basic security headers
+app.use((req, res, next) => {
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+});
+
 console.log(`Iniciando servidor na porta ${PORT}...`);
 console.log(`Procurando arquivos em: ${distPath}`);
 
@@ -17,18 +29,18 @@ console.log(`Procurando arquivos em: ${distPath}`);
 if (fs.existsSync(distPath)) {
     console.log("SUCESSO: Pasta dist encontrada.");
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    // Security: Use regex for Express 5 catch-all
+    app.get(/.*/, (req, res) => {
         res.sendFile(join(distPath, 'index.html'));
     });
 } else {
     // SE O BUILD FALHOU, O SERVER SOBE COM UMA MENSAGEM DE ERRO
-    // Isso evita o crash do Cloud Run e permite você ler o erro na tela.
+    // Security: Do not expose server details in the error response
     console.error("ERRO CRÍTICO: Pasta dist não existe!");
-    app.get('*', (req, res) => {
-        res.status(500).send(`
-            <h1>Erro de Build</h1>
-            <p>O servidor subiu, mas a pasta <b>dist</b> não foi encontrada.</p>
-            <p>Verifique se o comando 'npm run build' rodou corretamente no Dockerfile.</p>
+    app.get(/.*/, (req, res) => {
+        res.status(503).send(`
+            <h1>Service Unavailable</h1>
+            <p>The service is temporarily unavailable. Please try again later.</p>
         `);
     });
 }
