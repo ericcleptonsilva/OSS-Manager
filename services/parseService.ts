@@ -195,7 +195,8 @@ export const fetchFullData = async (): Promise<AppData> => {
     const trainingQuery = new Parse.Query('TrainingSession');
     // Exclude 'media' (base64) to prevent large payload and 500 errors
     trainingQuery.exclude('media');
-    const trainingObjs = await trainingQuery.limit(1000).descending('date').find();
+    // Limit to 100 to prevent overwhelming the server on initial load
+    const trainingObjs = await trainingQuery.limit(100).descending('date').find();
     
     const financialQuery = new Parse.Query('FinancialTransaction');
     const financialObjs = await financialQuery.limit(1000).descending('dueDate').find();
