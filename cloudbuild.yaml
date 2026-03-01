@@ -1,3 +1,6 @@
+# IMPORTANTE: As variáveis abaixo ($_VITE_PARSE_APP_ID, $_VITE_PARSE_JS_KEY, $_GEMINI_API_KEY)
+# devem ser configuradas nas "Substitution Variables" do seu Trigger no Google Cloud Build.
+# Acesse: Cloud Console → Cloud Build → Triggers → [Seu Trigger] → Edit → Substitution Variables
 steps:
   # 1. Build da imagem Docker com argumentos do ambiente
   - name: 'gcr.io/cloud-builders/docker'

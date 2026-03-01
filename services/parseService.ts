@@ -9,10 +9,13 @@ const PARSE_JS_KEY = import.meta.env.VITE_PARSE_JS_KEY;
 
 export const initializeParse = () => {
   if (!PARSE_APP_ID || !PARSE_JS_KEY) {
-    console.error("Parse credentials are missing in environment variables.");
+    const msg = "[Back4App] Credenciais ausentes! Verifique o arquivo .env (VITE_PARSE_APP_ID e VITE_PARSE_JS_KEY).";
+    console.error(msg);
+    throw new Error(msg);
   }
-  Parse.initialize(PARSE_APP_ID || '', PARSE_JS_KEY || '');
+  Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
   Parse.serverURL = 'https://parseapi.back4app.com/';
+  console.log('[Back4App] Parse inicializado com sucesso.');
 };
 
 // --- HELPERS ---
@@ -243,7 +246,7 @@ export const fetchFullData = async (): Promise<AppData> => {
 
   } catch (error) {
     console.error("Erro ao buscar dados do Parse:", error);
-    return INITIAL_DATA; // Fallback graceful
+    throw error; // Propaga o erro para a UI exibir mensagem adequada
   }
 };
 
