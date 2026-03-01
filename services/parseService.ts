@@ -186,6 +186,7 @@ export const fetchFullData = async (): Promise<AppData> => {
 
     // 3. Fetch Students
     const studentQuery = new Parse.Query('Student');
+    studentQuery.exclude('password');
     const studentObjs = await studentQuery.limit(1000).find();
     const students = studentObjs.map(mapStudent);
 
@@ -251,6 +252,8 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
   try {
     // 1. Fetch Team
     const teamQuery = new Parse.Query('Team');
+    teamQuery.exclude('adminEmail');
+    teamQuery.exclude('adminPassword');
     const teamObj = await teamQuery.first();
     let team: Team;
 
@@ -270,6 +273,8 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
 
     // 2. Fetch Academies (Basic Info Only)
     const academyQuery = new Parse.Query('Academy');
+    academyQuery.exclude('adminPassword');
+    academyQuery.exclude('allowedEmails');
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapPublicAcademy);
 
@@ -332,7 +337,8 @@ export const saveAcademy = async (academyData: Partial<Academy>) => {
   academy.set('logo', academyData.logo);
   academy.set('schedule', academyData.schedule);
   if (academyData.allowedEmails) {
-      academy.set('allowedEmails', academyData.allowedEmails);
+      const normalizedEmails = academyData.allowedEmails.map(e => e.trim().toLowerCase());
+      academy.set('allowedEmails', normalizedEmails);
   }
   if (academyData.adminPassword) {
       academy.set('adminPassword', academyData.adminPassword);
@@ -495,29 +501,20 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
 
         // 3. Try Academy Login
         const academyQuery = new Parse.Query('Academy');
-        // We can't query inside arrays easily for email with simple equality without knowing exact structure,
-        // so we fetch academies where this email *might* be allowed or just iterate.
-        // For security/performance in real app, use Cloud Code. Here we iterate client side safely enough for this scope.
-        const academies = await academyQuery.find();
+        const normalizedInputEmail = email.trim().toLowerCase();
+        academyQuery.equalTo('allowedEmails', normalizedInputEmail);
+        academyQuery.equalTo('adminPassword', pass);
+        const academy = await academyQuery.first();
 
-        for (const academy of academies) {
-            const allowedEmails = (academy.get('allowedEmails') || []) as string[];
-            const academyPass = academy.get('adminPassword');
-
-            // Normalized check (case insensitive & trimmed)
-            const normalizedInputEmail = email.trim().toLowerCase();
-            const isEmailAllowed = allowedEmails.some(e => e.trim().toLowerCase() === normalizedInputEmail);
-
-            if (isEmailAllowed && academyPass === pass) {
-                 // Return Mock Student/Professor User
-                 const mockUser = new Parse.User();
-                 mockUser.id = `user-${academy.id}`;
-                 mockUser.set('email', email);
-                 mockUser.set('username', academy.get('instructorName') || 'Professor');
-                 mockUser.set('academyId', academy.id); // Custom field to track context
-                 mockUser.set('role', 'professor'); // Set role
-                 return mockUser;
-            }
+        if (academy) {
+             // Return Mock Student/Professor User
+             const mockUser = new Parse.User();
+             mockUser.id = `user-${academy.id}`;
+             mockUser.set('email', email);
+             mockUser.set('username', academy.get('instructorName') || 'Professor');
+             mockUser.set('academyId', academy.id); // Custom field to track context
+             mockUser.set('role', 'professor'); // Set role
+             return mockUser;
         }
 
         // 4. Try Student Login
