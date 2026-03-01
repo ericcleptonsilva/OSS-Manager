@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { INITIAL_DATA, BELT_STYLES, BELT_GROUPS, WEEKDAYS, JIU_JITSU_TECHNIQUES } from './constants';
 import { Academy, AppData, Student, BeltColor, Team, TrainingSession, TrainingMedia, AcademySchedule, TimeRange, FinancialTransaction, FinancialType } from './types';
-import { IconAcademy, IconUsers, IconPlus, IconSparkles, IconBack, IconClock, IconEdit, IconTrash, IconSettings, IconCamera, IconClipboard, IconHistory, IconCalendar, IconCheck, IconMoney, IconWallet, IconAlert, IconLogout, IconMail, IconLock } from './components/icons';
+import { IconAcademy, IconUsers, IconPlus, IconSparkles, IconBack, IconClock, IconEdit, IconTrash, IconSettings, IconCamera, IconClipboard, IconHistory, IconCalendar, IconCheck, IconMoney, IconWallet, IconAlert, IconLogout, IconMail, IconLock, IconUser, IconUserPlus, IconShield } from './components/icons';
 import { Modal } from './components/Modal';
 import { generateTeamAnalysis } from './services/GeminiService';
 import * as ParseService from './services/parseService';
@@ -28,6 +28,9 @@ const App = () => {
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [registerName, setRegisterName] = useState('');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(false);
 
   // 1. Data State
   const [data, setData] = useState<AppData>(INITIAL_DATA);
@@ -223,6 +226,7 @@ const App = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoadingAuth(true);
 
     try {
       // Fluxo de Login Customizado (Parse User OU Team Admin OU Academy Professor)
@@ -245,8 +249,12 @@ const App = () => {
 
       const freshData = await checkUserRoleAndLoadData(loginEmail, role);
       setIsLoginModalOpen(false);
+      setLoginEmail('');
+      setLoginPassword('');
 
       if (loginTargetAcademyId) {
+        // ... rest of login logic
+
         // Use freshData to check permissions, as state update might not be immediate or we want to be sure
         const targetAcademy = freshData.academies.find(a => a.id === loginTargetAcademyId);
         // Check Access after login
@@ -267,11 +275,43 @@ const App = () => {
       }
     } catch (error: any) {
       console.error(error);
-      if (error.code === 101) {
-        alert("Email ou senha inválidos.");
-      } else {
-        alert("Erro na autenticação. Verifique sua conexão.");
-      }
+      showNotification(error.message || 'Erro na autenticação. Verifique sua conexão.', 'error');
+    } finally {
+      setIsLoadingAuth(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoadingAuth(true);
+
+    try {
+      const user = await ParseService.registerUser(registerName, loginEmail, loginPassword);
+      showNotification('Conta criada com sucesso! Bem-vindo.');
+
+      localStorage.setItem('oss_custom_session', JSON.stringify({
+        email: user.get('email'),
+        role: 'student',
+        userId: user.id
+      }));
+
+      setIsAuthenticated(true);
+      setUserRole('student');
+      setCurrentUserId(user.id);
+
+      const fetchedData = await ParseService.fetchFullData();
+      setData(fetchedData);
+
+      setIsLoginModalOpen(false);
+      setIsRegisterMode(false);
+      setRegisterName('');
+      setLoginEmail('');
+      setLoginPassword('');
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      showNotification(err.message || 'Erro ao criar conta. Tente outro email.', 'error');
+    } finally {
+      setIsLoadingAuth(false);
     }
   };
 
@@ -287,8 +327,11 @@ const App = () => {
     setLoginPassword('');
   };
 
-  const showNotification = (message: string) => {
+  const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification(message);
+    setNotificationType(type);
     setTimeout(() => {
       setNotification(null);
     }, 3000);
@@ -397,7 +440,15 @@ const App = () => {
   };
 
   const handleEditTeam = () => {
-    setNewTeam({ ...data.team });
+    const team = { ...data.team };
+    // Force specific requested admin email if empty or incorrect
+    if (!team.adminEmail || team.adminEmail.includes('weverton')) {
+      team.adminEmail = 'admin@oss.com';
+    }
+    if (!team.adminPassword) {
+      team.adminPassword = 'admin';
+    }
+    setNewTeam(team);
     setIsTeamModalOpen(true);
   };
 
@@ -1226,19 +1277,19 @@ const App = () => {
               )}
             </div>
 
-            <div className="flex justify-between items-end">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
               <div>
-                <h2 className={`text-3xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-jiu-primary'}`}>Academias</h2>
-                <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                <h2 className={`text-2xl md:text-3xl font-bold mb-1 md:mb-2 ${darkMode ? 'text-white' : 'text-jiu-primary'}`}>Academias</h2>
+                <p className={`text-sm md:text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   {isAuthenticated ? "Gerencie as unidades da sua equipe." : "Escolha sua unidade para acessar."}
                 </p>
               </div>
               {isAuthenticated && userRole === 'admin' && (
                 <button
                   onClick={handleOpenNewAcademyModal}
-                  className="bg-jiu-accent hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-md flex items-center transition-all transform hover:scale-105"
+                  className="bg-jiu-accent hover:bg-red-700 text-white px-3 py-1.5 md:px-3.5 md:py-2 rounded-lg shadow-md flex items-center justify-center transition-all transform hover:scale-105 text-xs md:text-sm font-bold whitespace-nowrap"
                 >
-                  <IconPlus className="w-5 h-5 mr-2" />
+                  <IconPlus className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1 md:mr-1.5" />
                   Nova Academia
                 </button>
               )}
@@ -1300,8 +1351,8 @@ const App = () => {
                           handlePublicAcademyClick(academy.id);
                         }}
                         className={`ml-2 px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all transform hover:scale-105 ${isAuthenticated
-                            ? 'bg-jiu-primary text-white hover:bg-blue-800'
-                            : 'bg-green-600 text-white hover:bg-green-700'
+                          ? 'bg-jiu-primary text-white hover:bg-blue-800'
+                          : 'bg-green-600 text-white hover:bg-green-700'
                           }`}
                       >
                         {isAuthenticated ? 'Acessar' : 'Login'}
@@ -1377,7 +1428,7 @@ const App = () => {
             </button>
 
             {/* Academy Header */}
-            <div className={`rounded-2xl shadow-sm border p-4 md:p-8 relative overflow-hidden ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
+            <div className={`rounded-xl md:rounded-2xl shadow-sm border p-4 md:p-6 lg:p-8 relative overflow-hidden ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
               <div className="absolute top-0 right-0 w-64 h-64 bg-jiu-primary opacity-5 rounded-full transform translate-x-1/3 -translate-y-1/3 blur-3xl"></div>
 
               <div className="relative z-10 flex flex-col lg:flex-row lg:items-start justify-between gap-6">
@@ -1395,8 +1446,8 @@ const App = () => {
                   </div>
 
                   <div className="flex-1 text-center md:text-left">
-                    <div className="flex flex-col md:flex-row items-center md:items-start gap-2 mb-2">
-                      <h2 className={`text-2xl md:text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAcademy.name}</h2>
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-2 mb-1">
+                      <h2 className={`text-xl md:text-3xl lg:text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAcademy.name}</h2>
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleEditAcademy(selectedAcademy)}
@@ -1490,37 +1541,36 @@ const App = () => {
               )}
             </div>
 
-            {/* Academy Navigation Tabs */}
-            <div className={`flex border-b overflow-x-auto ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className={`grid grid-cols-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <button
                 onClick={() => setActiveAcademyTab('students')}
-                className={`px-6 py-3 font-medium text-sm flex items-center transition-colors whitespace-nowrap
+                className={`py-3 font-medium text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center transition-colors
                   ${activeAcademyTab === 'students'
                     ? 'border-b-2 border-jiu-primary text-jiu-primary'
                     : `text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}`}
               >
-                <IconUsers className="w-5 h-5 mr-2" />
-                Tatame (Alunos)
+                <IconUsers className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 mb-1 sm:mb-0" />
+                <span className="text-center">Tatame (Alunos)</span>
               </button>
               <button
                 onClick={() => setActiveAcademyTab('trainings')}
-                className={`px-6 py-3 font-medium text-sm flex items-center transition-colors whitespace-nowrap
+                className={`py-3 font-medium text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center transition-colors
                   ${activeAcademyTab === 'trainings'
                     ? 'border-b-2 border-jiu-primary text-jiu-primary'
                     : `text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}`}
               >
-                <IconClipboard className="w-5 h-5 mr-2" />
-                Aulas / Treinos
+                <IconClipboard className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 mb-1 sm:mb-0" />
+                <span className="text-center">Aulas / Treinos</span>
               </button>
               <button
                 onClick={() => setActiveAcademyTab('financial')}
-                className={`px-6 py-3 font-medium text-sm flex items-center transition-colors whitespace-nowrap
+                className={`py-3 font-medium text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center transition-colors
                   ${activeAcademyTab === 'financial'
                     ? 'border-b-2 border-green-600 text-green-600'
                     : `text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}`}
               >
-                <IconMoney className="w-5 h-5 mr-2" />
-                Financeiro
+                <IconMoney className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 mb-1 sm:mb-0" />
+                <span className="text-center">Financeiro</span>
               </button>
             </div>
 
@@ -1533,9 +1583,9 @@ const App = () => {
                   <div className="flex justify-end">
                     <button
                       onClick={handleOpenNewStudentModal}
-                      className="bg-jiu-secondary hover:bg-black text-white px-4 py-2 rounded-lg shadow flex items-center transition-all text-sm font-medium"
+                      className="bg-jiu-secondary hover:bg-black text-white px-3 py-1.5 md:px-3.5 md:py-2 rounded-lg shadow flex items-center transition-all text-xs md:text-sm font-medium whitespace-nowrap"
                     >
-                      <IconPlus className="w-4 h-4 mr-2" />
+                      <IconPlus className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1 md:mr-1.5" />
                       Matricular Aluno
                     </button>
                   </div>
@@ -1822,8 +1872,8 @@ const App = () => {
 
                             {training.description && (
                               <p className={`text-sm mt-3 p-3 rounded-lg border backdrop-blur-sm ${coverMedia
-                                  ? 'bg-black/40 border-white/10 text-gray-200'
-                                  : (darkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-100 text-gray-600')
+                                ? 'bg-black/40 border-white/10 text-gray-200'
+                                : (darkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-100 text-gray-600')
                                 }`}>
                                 {training.description}
                               </p>
@@ -2080,8 +2130,8 @@ const App = () => {
                         <div
                           key={degree}
                           className={`w-2 md:w-3 h-12 md:h-20 rounded-full shadow-sm transition-all duration-300 ${selectedStudent.degrees && selectedStudent.degrees >= degree
-                              ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
-                              : 'bg-white/10'
+                            ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
+                            : 'bg-white/10'
                             }`}
                           title={`Grau ${degree}`}
                         ></div>
@@ -2097,27 +2147,73 @@ const App = () => {
 
                     {/* EVOLUTION / PROGRESS CARD */}
                     <div className={`mb-6 p-6 rounded-xl border border-yellow-200 ${darkMode ? 'bg-yellow-900/10 border-yellow-700/30' : 'bg-yellow-50'}`}>
-                      <h4 className={`text-sm font-bold uppercase mb-4 text-center tracking-wider ${darkMode ? 'text-yellow-500' : 'text-yellow-700'}`}>
-                        Progresso do Grau
-                      </h4>
-
-                      <div className="flex justify-center space-x-3 mb-4">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            disabled={userRole === 'student'}
-                            onClick={() => handleUpdateStudentProgress(selectedStudent.id, star === selectedStudent.progressStars ? star - 1 : star)}
-                            className={`transition-all transform ${userRole !== 'student' ? 'hover:scale-125 cursor-pointer' : 'cursor-default'}`}
-                          >
-                            <IconSparkles
-                              className={`w-8 h-8 ${(selectedStudent.progressStars || 0) >= star
-                                  ? 'text-yellow-400 fill-yellow-400 drop-shadow-md'
-                                  : 'text-gray-300 dark:text-gray-600'
-                                }`}
-                            />
-                          </button>
-                        ))}
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className={`text-sm font-bold uppercase tracking-wider ${darkMode ? 'text-yellow-500' : 'text-yellow-700'}`}>
+                          Progresso do Grau
+                        </h4>
+                        <span className={`text-xs font-bold ${darkMode ? 'text-yellow-500' : 'text-yellow-700'}`}>
+                          {((selectedStudent.progressStars || 0) / 5 * 100).toFixed(0)}%
+                        </span>
                       </div>
+
+                      {/* Progress Bar instead of Stars */}
+                      <div className="relative w-full h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-4 shadow-inner">
+                        <div
+                          className="absolute left-0 top-0 h-full bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all duration-500 ease-out flex items-center justify-end pr-2"
+                          style={{ width: `${(selectedStudent.progressStars || 0) / 5 * 100}%` }}
+                        >
+                          {(selectedStudent.progressStars || 0) > 0 && <div className="w-1 h-1 bg-white rounded-full animate-pulse shadow-[0_0_5px_white]"></div>}
+                        </div>
+                      </div>
+
+                      {/* Controls for Professor/Admin */}
+                      {(userRole === 'admin' || userRole === 'professor') && (
+                        <div className="space-y-3 mt-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-1">Controle de Evolução</p>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] text-gray-500 mb-1">Mérito</span>
+                              <button
+                                onClick={() => handleUpdateStudentProgress(selectedStudent.id, Math.min(5, (selectedStudent.progressStars || 0) + 0.5))}
+                                className="bg-green-500 hover:bg-green-600 text-white w-9 h-9 rounded-full flex items-center justify-center shadow-sm transition-transform active:scale-90"
+                                title="+0.5 Estrela de Mérito"
+                              >
+                                <IconPlus className="w-4 h-4" />
+                              </button>
+                            </div>
+
+                            <div className="flex-1 flex flex-col items-center border-x border-gray-100 dark:border-gray-700 px-2">
+                              <span className="text-[9px] text-gray-500 mb-1">Definir Estrelas</span>
+                              <div className="flex space-x-1">
+                                {[1, 2, 3, 4, 5].map((val) => (
+                                  <button
+                                    key={val}
+                                    onClick={() => handleUpdateStudentProgress(selectedStudent.id, val)}
+                                    className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold transition-all ${(selectedStudent.progressStars || 0) >= val
+                                      ? 'bg-yellow-500 text-white shadow-sm'
+                                      : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                                      } hover:scale-110 active:scale-90`}
+                                  >
+                                    {val}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] text-gray-500 mb-1">Falta/Ajuste</span>
+                              <button
+                                onClick={() => handleUpdateStudentProgress(selectedStudent.id, Math.max(0, (selectedStudent.progressStars || 0) - 0.5))}
+                                className="bg-red-500 hover:bg-red-600 text-white w-9 h-9 rounded-full flex items-center justify-center shadow-sm transition-transform active:scale-90"
+                                title="-0.5 Estrela (Penalidade/Ajuste)"
+                              >
+                                <IconTrash className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
 
                       {/* Actions for Professor/Admin */}
                       {(userRole === 'admin' || userRole === 'professor') && (
@@ -2273,15 +2369,36 @@ const App = () => {
         title="Acesso Restrito"
       >
         <div className="flex flex-col items-center mb-6">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-2">
-            <IconLock className="w-8 h-8 text-gray-500" />
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-2">
+            {isRegisterMode ? <IconUserPlus className="w-8 h-8 text-jiu-primary" /> : <IconLock className="w-8 h-8 text-gray-500" />}
           </div>
-          <p className="text-gray-500 text-sm text-center">Entre com suas credenciais para acessar esta área.</p>
+          <p className="text-gray-500 text-sm text-center">
+            {isRegisterMode ? 'Crie sua conta para começar.' : 'Entre com suas credenciais para acessar esta área.'}
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={isRegisterMode ? handleRegister : handleLogin} className="space-y-4">
+          {isRegisterMode && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome Completo</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <IconUser className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  required
+                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all"
+                  placeholder="Seu Nome"
+                  value={registerName}
+                  onChange={(e) => setRegisterName(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <IconMail className="h-5 w-5 text-gray-400" />
@@ -2289,7 +2406,7 @@ const App = () => {
               <input
                 type="email"
                 required
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all"
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all"
                 placeholder="seu@email.com"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
@@ -2298,7 +2415,7 @@ const App = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Senha</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <IconLock className="h-5 w-5 text-gray-400" />
@@ -2306,7 +2423,7 @@ const App = () => {
               <input
                 type="password"
                 required
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all"
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all"
                 placeholder="••••••"
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
@@ -2317,9 +2434,20 @@ const App = () => {
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-jiu-primary hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+              disabled={isLoadingAuth}
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-jiu-primary hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-50"
             >
-              Entrar
+              {isLoadingAuth ? 'Processando...' : (isRegisterMode ? 'Criar Conta' : 'Entrar')}
+            </button>
+          </div>
+
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              onClick={() => setIsRegisterMode(!isRegisterMode)}
+              className="text-sm font-medium text-jiu-primary hover:text-blue-700 transition-colors"
+            >
+              {isRegisterMode ? 'Já tem uma conta? Entre aqui' : 'Não tem conta? Cadastre-se'}
             </button>
           </div>
         </form>
@@ -2666,21 +2794,66 @@ const App = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Email do Admin</label>
               <input
                 type="email"
-                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
-                placeholder="admin@equipe.com"
+                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
+                placeholder="admin@oss.com"
                 value={newTeam.adminEmail || ''}
-                onChange={e => setNewTeam({ ...newTeam, adminEmail: e.target.value })}
+                readOnly={true} // Protect global admin email
+                title="Email fixo do Administrador"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Senha do Admin</label>
               <input
                 type="text"
-                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
+                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
                 placeholder="Definir senha de acesso"
                 value={newTeam.adminPassword || ''}
                 onChange={e => setNewTeam({ ...newTeam, adminPassword: e.target.value })}
               />
+            </div>
+          </div>
+
+          {/* Professor Management Section */}
+          <div className="bg-blue-50/50 p-4 rounded-lg border border-blue-100 space-y-4">
+            <div className="flex justify-between items-center border-b border-blue-100 pb-2">
+              <h4 className="font-bold text-blue-900 text-sm">Gerenciar Professores</h4>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTeamModalOpen(false);
+                  handleOpenNewAcademyModal();
+                }}
+                className="bg-jiu-primary hover:bg-blue-800 text-white px-3 py-1 rounded-md text-xs font-bold shadow-sm flex items-center transition-all transform hover:scale-105"
+              >
+                <IconPlus className="w-3 h-3 mr-1" /> Novo Professor
+              </button>
+            </div>
+            <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+              {data.academies.length === 0 ? (
+                <p className="text-xs text-gray-500 italic text-center py-2">Nenhuma academia/professor cadastrado.</p>
+              ) : (
+                data.academies.map(academy => (
+                  <div key={academy.id} className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-100 shadow-sm text-sm hover:border-blue-200 transition-colors">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-gray-800">{academy.instructorName}</span>
+                      <span className="text-[10px] text-gray-500 uppercase font-medium">{academy.name}</span>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-[11px] text-blue-600 font-mono bg-blue-50 px-1.5 py-0.5 rounded">{academy.allowedEmails?.[0] || 'Sem email'}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsTeamModalOpen(false);
+                          handleEditAcademy(academy);
+                        }}
+                        className="text-[10px] font-bold text-jiu-primary hover:text-blue-800 flex items-center"
+                      >
+                        <IconEdit className="w-2.5 h-2.5 mr-0.5" /> Editar Acesso
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -3348,9 +3521,13 @@ const App = () => {
 
       {/* Notification Toast */}
       {notification && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full shadow-2xl z-[60] flex items-center space-x-3 animate-bounce-in transition-all duration-300 border border-green-500">
-          <div className="bg-white text-green-600 rounded-full p-1">
-            <IconCheck className="w-4 h-4" />
+        <div className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl z-[60] flex items-center space-x-3 animate-bounce-in transition-all duration-300 border ${notificationType === 'error'
+          ? 'bg-red-600 border-red-500 text-white'
+          : 'bg-green-600 border-green-500 text-white'
+          }`}>
+          <div className={`rounded-full p-1 bg-white ${notificationType === 'error' ? 'text-red-600' : 'text-green-600'
+            }`}>
+            {notificationType === 'error' ? <IconAlert className="w-4 h-4" /> : <IconCheck className="w-4 h-4" />}
           </div>
           <span className="font-medium text-sm">{notification}</span>
         </div>

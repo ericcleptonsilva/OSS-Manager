@@ -80,19 +80,7 @@ export const loginUser = async (email: string, pass: string) => {
   }
 };
 
-export const registerUser = async (email: string, pass: string) => {
-  const user = new Parse.User();
-  user.set("username", email); // Usamos email como username
-  user.set("password", pass);
-  user.set("email", email);
 
-  try {
-    await user.signUp();
-    return user;
-  } catch (error) {
-    throw error;
-  }
-};
 
 export const logoutUser = async () => {
   await Parse.User.logOut();
@@ -478,9 +466,31 @@ export const saveTeam = async (teamData: Partial<Team>) => {
 };
 export const performCustomLogin = async (email: string, pass: string): Promise<Parse.User> => {
   try {
-    // 1. Try Standard Parse Login (for real users if any)
+    // 1. Try Standard Parse Login (_User class)
     try {
       const user = await Parse.User.logIn(email, pass);
+      // Determine role: check 'role' field first, then Parse.Role
+      let role = user.get('role') as string | undefined;
+      if (!role) {
+        try {
+          const roleQuery = new Parse.Query(Parse.Role);
+          roleQuery.equalTo('users', user);
+          const roles = await roleQuery.find();
+          if (roles.length > 0) {
+            // Map first matching role name to our role system
+            const roleName = roles[0].get('name') as string;
+            if (roleName === 'admin' || roleName === 'Admin') role = 'admin';
+            else if (roleName === 'professor' || roleName === 'Professor') role = 'professor';
+            else role = 'student';
+          } else {
+            // Parse User with no role = treat as admin (backward compat)
+            role = 'admin';
+          }
+        } catch {
+          role = 'admin'; // fallback
+        }
+      }
+      user.set('role', role);
       return user;
     } catch (e: any) {
       // Ignore code 101 (Invalid login) to try other methods, rethrow others
@@ -490,46 +500,46 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
     // 2. Try Team Admin Login
     const teamQuery = new Parse.Query('Team');
     const team = await teamQuery.first();
+    const normalizedInputEmail = email.trim().toLowerCase();
+
+    // Hardcoded fallback for admin@oss.com as requested by user
+    if (normalizedInputEmail === 'admin@oss.com' && pass === 'admin') {
+      const mockAdmin = new Parse.User();
+      mockAdmin.id = 'admin-user-hardcoded';
+      mockAdmin.set('email', 'admin@oss.com');
+      mockAdmin.set('username', 'Admin Global');
+      mockAdmin.set('role', 'admin');
+      return mockAdmin;
+    }
+
     if (team) {
       const teamEmail = team.get('adminEmail');
       const teamPass = team.get('adminPassword');
-
-      // Basic Check (In production, passwords should be hashed)
-      if (teamEmail && teamPass && teamEmail.toLowerCase() === email.toLowerCase() && teamPass === pass) {
-        // Return Mock Admin User
+      if (teamEmail && teamPass && teamEmail.toLowerCase() === normalizedInputEmail && teamPass === pass) {
         const mockUser = new Parse.User();
         mockUser.id = 'admin-user';
         mockUser.set('email', teamEmail);
         mockUser.set('username', 'Admin');
-        mockUser.set('role', 'admin'); // Set role
-        // Fake Session
+        mockUser.set('role', 'admin');
         return mockUser;
       }
     }
 
-    // 3. Try Academy Login
+    // 3. Try Academy (Professor) Login
     const academyQuery = new Parse.Query('Academy');
-    // We can't query inside arrays easily for email with simple equality without knowing exact structure,
-    // so we fetch academies where this email *might* be allowed or just iterate.
-    // For security/performance in real app, use Cloud Code. Here we iterate client side safely enough for this scope.
     const academies = await academyQuery.find();
-
     for (const academy of academies) {
       const allowedEmails = (academy.get('allowedEmails') || []) as string[];
       const academyPass = academy.get('adminPassword');
-
-      // Normalized check (case insensitive & trimmed)
       const normalizedInputEmail = email.trim().toLowerCase();
       const isEmailAllowed = allowedEmails.some(e => e.trim().toLowerCase() === normalizedInputEmail);
-
       if (isEmailAllowed && academyPass === pass) {
-        // Return Mock Student/Professor User
         const mockUser = new Parse.User();
         mockUser.id = `user-${academy.id}`;
         mockUser.set('email', email);
         mockUser.set('username', academy.get('instructorName') || 'Professor');
-        mockUser.set('academyId', academy.id); // Custom field to track context
-        mockUser.set('role', 'professor'); // Set role
+        mockUser.set('academyId', academy.id);
+        mockUser.set('role', 'professor');
         return mockUser;
       }
     }
@@ -539,10 +549,9 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
     studentQuery.equalTo('email', email);
     studentQuery.equalTo('password', pass);
     const student = await studentQuery.first();
-
     if (student) {
       const mockUser = new Parse.User();
-      mockUser.id = student.id; // Use real student ID
+      mockUser.id = student.id;
       mockUser.set('email', student.get('email'));
       mockUser.set('username', student.get('name'));
       mockUser.set('academyId', student.get('academy')?.id);
@@ -550,10 +559,25 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       return mockUser;
     }
 
-    // If nothing matches
-    throw new Parse.Error(101, "Invalid username/password.");
+    throw new Parse.Error(101, "Email ou senha inválidos.");
 
   } catch (error) {
     throw error;
   }
+};
+
+// Cadastro de novo usuário via Parse User
+export const registerUser = async (
+  name: string,
+  email: string,
+  password: string
+): Promise<Parse.User> => {
+  const user = new Parse.User();
+  user.set('username', email); // Parse requer username único
+  user.set('email', email);
+  user.set('password', password);
+  user.set('name', name);
+  user.set('role', 'student'); // Padrão: aluno. Admin pode promover depois.
+  await user.signUp();
+  return user;
 };
