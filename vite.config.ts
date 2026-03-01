@@ -21,9 +21,6 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.API_KEY': JSON.stringify(''),
         'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || ''),
-        // Explicitly defining them guarantees injection, regardless of how Docker/Vite parses the .env
-        'import.meta.env.VITE_PARSE_APP_ID': JSON.stringify(process.env.VITE_PARSE_APP_ID || env.VITE_PARSE_APP_ID || ''),
-        'import.meta.env.VITE_PARSE_JS_KEY': JSON.stringify(process.env.VITE_PARSE_JS_KEY || env.VITE_PARSE_JS_KEY || '')
       },
       resolve: {
         alias: {
