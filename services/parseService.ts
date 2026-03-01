@@ -420,13 +420,14 @@ export const saveTeam = async (teamData: Partial<Team>) => {
     let team;
 
     // Se tiver ID, usa. Senão, tenta buscar o primeiro registro de Team (Single Team App)
-    if (teamData.id) {
+    if (teamData.id && !teamData.id.startsWith('team-')) {
         try {
             const query = new Parse.Query(TeamClass);
             team = await query.get(teamData.id);
         } catch (e) {
-             // Se não achar pelo ID, cria um novo
-             team = new TeamClass();
+             const query = new Parse.Query(TeamClass);
+             team = await query.first();
+             if (!team) team = new TeamClass();
         }
     } else {
         const query = new Parse.Query(TeamClass);
