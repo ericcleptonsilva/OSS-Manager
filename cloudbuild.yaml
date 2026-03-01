@@ -4,7 +4,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/oss-manager-image'
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME:latest'
       - '--build-arg'
       - 'VITE_PARSE_APP_ID=$_VITE_PARSE_APP_ID'
       - '--build-arg'
@@ -13,23 +13,27 @@ steps:
       - 'GEMINI_API_KEY=$_GEMINI_API_KEY'
       - '.'
 
-  # 2. Deploy para o Cloud Run
+  # 2. Push da imagem Docker para o Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME:latest']
+
+  # 3. Deploy para o Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
-      - '$_SERVICE_NAME' # O nome do serviço configurado nas variáveis do seu gatilho
+      - '$_SERVICE_NAME'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/oss-manager-image'
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME:latest'
       - '--region'
-      - '$_DEPLOY_REGION' # A região configurada nas variáveis do seu gatilho
+      - '$_DEPLOY_REGION'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
 
 images:
-  - 'gcr.io/$PROJECT_ID/oss-manager-image'
+  - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
