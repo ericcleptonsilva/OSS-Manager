@@ -197,8 +197,18 @@ export const fetchFullData = async (): Promise<AppData> => {
     let trainingObjs: Parse.Object[] = [];
     try {
       const trainingQuery = new Parse.Query('TrainingSession');
-      // NOTE: Avoid exclude() and select() — Back4App REST API returns 500 with these parameters
-      trainingObjs = await trainingQuery.limit(50).descending('date').find();
+      // IMPORTANT: Do NOT use .descending('date') here!
+      // Reason: TrainingSession docs contain large base64 'media' fields.
+      // MongoDB exceeds its 32MB RAM sort limit without an index on 'date'.
+      // Fix #1 (code): Remove server-side sort — sort on the client below instead.
+      // Fix #2 (Back4App): Add an index on the 'date' field via Index Manager.
+      trainingObjs = await trainingQuery.limit(100).find();
+      // Sort client-side by date descending (newest first)
+      trainingObjs.sort((a, b) => {
+        const da = a.get('date') || '';
+        const db = b.get('date') || '';
+        return db.localeCompare(da);
+      });
     } catch (trainingError) {
       console.warn('[Back4App] Falha ao carregar treinos (TrainingSession):', trainingError);
       // Continue without trainings — other data still loads
