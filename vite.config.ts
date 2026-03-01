@@ -4,7 +4,9 @@ import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
+    // Explicitly loading environment variables to ensure they are available
+    const env = loadEnv(mode, process.cwd(), '');
+
     return {
       server: {
         port: 3000,
@@ -13,13 +15,15 @@ export default defineConfig(({ mode }) => {
       plugins: [
         react(),
         nodePolyfills({
-          // Whether to polyfill `node:` protocol imports.
           protocolImports: true,
         }),
       ],
       define: {
         'process.env.API_KEY': JSON.stringify(''),
-        'process.env.GEMINI_API_KEY': JSON.stringify('')
+        'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || ''),
+        // Explicitly defining them guarantees injection, regardless of how Docker/Vite parses the .env
+        'import.meta.env.VITE_PARSE_APP_ID': JSON.stringify(process.env.VITE_PARSE_APP_ID || env.VITE_PARSE_APP_ID || ''),
+        'import.meta.env.VITE_PARSE_JS_KEY': JSON.stringify(process.env.VITE_PARSE_JS_KEY || env.VITE_PARSE_JS_KEY || '')
       },
       resolve: {
         alias: {
