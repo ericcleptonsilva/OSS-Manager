@@ -19,11 +19,11 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'oss-manager' # Verifique se este é o nome exato no seu console
+      - '$_SERVICE_NAME' # O nome do serviço configurado nas variáveis do seu gatilho
       - '--image'
       - 'gcr.io/$PROJECT_ID/oss-manager-image'
       - '--region'
-      - 'southamerica-east1' # Região alvo
+      - '$_DEPLOY_REGION' # A região configurada nas variáveis do seu gatilho
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
