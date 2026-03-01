@@ -17,14 +17,16 @@ console.log(`Procurando arquivos em: ${distPath}`);
 if (fs.existsSync(distPath)) {
     console.log("SUCESSO: Pasta dist encontrada.");
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    // Express 5 requires regex for catch-all routes instead of string '*'
+    app.get(/.*/, (req, res) => {
         res.sendFile(join(distPath, 'index.html'));
     });
 } else {
     // SE O BUILD FALHOU, O SERVER SOBE COM UMA MENSAGEM DE ERRO
     // Isso evita o crash do Cloud Run e permite você ler o erro na tela.
     console.error("ERRO CRÍTICO: Pasta dist não existe!");
-    app.get('*', (req, res) => {
+    // Express 5 requires regex for catch-all routes instead of string '*'
+    app.get(/.*/, (req, res) => {
         res.status(500).send(`
             <h1>Erro de Build</h1>
             <p>O servidor subiu, mas a pasta <b>dist</b> não foi encontrada.</p>
