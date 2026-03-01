@@ -193,21 +193,22 @@ export const fetchFullData = async (): Promise<AppData> => {
     const students = studentObjs.map(mapStudent);
 
     // 4. Fetch Trainings & Financials and attach to Academies
-    // Note: Em um app maior, faríamos isso sob demanda, mas aqui vamos carregar tudo para manter a estrutura do App.tsx
 
-    const trainingQuery = new Parse.Query('TrainingSession');
-    // Use select() instead of exclude() — Back4App REST API does not support excludeKeys (returns 500)
-    // We select all fields EXCEPT 'media' (base64 arrays) to prevent large payload
-    trainingQuery.select(['date', 'duration', 'techniques', 'description', 'studentIds', 'academy']);
-    // Limit to 100 to prevent overwhelming the server on initial load
-    const trainingObjs = await trainingQuery.limit(100).descending('date').find();
+    let trainingObjs: Parse.Object[] = [];
+    try {
+      const trainingQuery = new Parse.Query('TrainingSession');
+      // NOTE: Avoid exclude() and select() — Back4App REST API returns 500 with these parameters
+      trainingObjs = await trainingQuery.limit(50).descending('date').find();
+    } catch (trainingError) {
+      console.warn('[Back4App] Falha ao carregar treinos (TrainingSession):', trainingError);
+      // Continue without trainings — other data still loads
+    }
 
     const financialQuery = new Parse.Query('FinancialTransaction');
     const financialObjs = await financialQuery.limit(1000).descending('dueDate').find();
 
     // Distribute data to academies
     academies.forEach(ac => {
-      // Filter trainings for this academy (assumindo que o treino tem ponteiro para academia)
       ac.trainings = trainingObjs
         .filter(t => t.get('academy') && t.get('academy').id === ac.id)
         .map(t => ({
@@ -216,11 +217,10 @@ export const fetchFullData = async (): Promise<AppData> => {
           duration: t.get('duration'),
           techniques: t.get('techniques') || [],
           description: t.get('description'),
-          media: t.get('media') || [], // Base64 strings stored in array
+          media: t.get('media') || [],
           studentIds: t.get('studentIds') || []
         }));
 
-      // Filter financials based on students belonging to this academy
       const academyStudentIds = students.filter(s => s.academyId === ac.id).map(s => s.id);
 
       ac.financials = financialObjs
