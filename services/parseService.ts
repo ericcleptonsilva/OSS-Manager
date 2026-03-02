@@ -525,9 +525,11 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       }
     }
 
-    // 3. Try Academy (Professor) Login
+    // 3. Try Academy (Professor) Login via allowedEmails + academy adminPassword
     const academyQuery = new Parse.Query('Academy');
     const academies = await academyQuery.find();
+
+    // Check old method first
     for (const academy of academies) {
       const allowedEmails = (academy.get('allowedEmails') || []) as string[];
       const academyPass = academy.get('adminPassword');
@@ -544,7 +546,22 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       }
     }
 
-    // 4. Try Student Login
+    // 4. Try ProfessorAccount Login (new explicit professor accounts)
+    const profQuery = new Parse.Query('ProfessorAccount');
+    const normalizedInputEmailProf = email.trim().toLowerCase();
+    const profAccounts = await profQuery.find();
+    const matchingProf = profAccounts.find(p => p.get('email')?.toLowerCase() === normalizedInputEmailProf && p.get('password') === pass);
+
+    if (matchingProf) {
+      const mockUser = new Parse.User();
+      mockUser.id = `prof-${matchingProf.id}`;
+      mockUser.set('email', matchingProf.get('email'));
+      mockUser.set('username', matchingProf.get('name') || 'Professor');
+      mockUser.set('role', 'professor');
+      return mockUser;
+    }
+
+    // 5. Try Student Login
     const studentQuery = new Parse.Query('Student');
     studentQuery.equalTo('email', email);
     studentQuery.equalTo('password', pass);
@@ -580,4 +597,19 @@ export const registerUser = async (
   user.set('role', 'student'); // Padrão: aluno. Admin pode promover depois.
   await user.signUp();
   return user;
+};
+
+export const saveProfessorAccount = async (email: string, name: string, password?: string): Promise<Parse.Object> => {
+  const query = new Parse.Query('ProfessorAccount');
+  query.equalTo('email', email.trim().toLowerCase());
+  let account = await query.first();
+  if (!account) {
+    account = new Parse.Object('ProfessorAccount');
+  }
+
+  account.set('email', email.trim().toLowerCase());
+  if (name) account.set('name', name);
+  if (password) account.set('password', password);
+
+  return await account.save();
 };

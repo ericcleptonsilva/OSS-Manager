@@ -70,6 +70,24 @@ Acesse: **Back4App Dashboard → Database → [Classe] → Class Level Permissio
 
 ---
 
+## 📝 Log de Alterações Recentes
+
+### Administração e Segurança
+- **Correção de Credenciais**: O email `admin@oss.com` foi consolidado como o único acesso administrativo global. Removidas referências a emails de teste anteriores.
+- **Gestão de Professores**: Adicionada nova seção no modal de **Configurações da Equipe** para listar e gerenciar o acesso de professores de todas as academias em um só lugar.
+- **Botão Novo Professor**: Implementado atalho direto para cadastrar novos instrutores vinculados a unidades.
+
+### Interface (UI/UX)
+- **Barra de Abas (Tabs)**: Substituída a rolagem horizontal por um layout em grade (`grid-cols-3`) para melhor navegação em dispositivos móveis e desktop.
+- **Botões Compactos**: Redimensionados os botões "Nova Academia" e "Matricular Aluno" para uma estética mais premium e equilibrada.
+- **Dark Mode**: Ajustes de contraste e cores para melhor legibilidade no tema escuro.
+
+### Evolução do Aluno
+- **Ponto de Mérito**: Adicionados botões de `+0.5` e `-0.5` estrelas no perfil do aluno para permitir ajustes manuais de progresso pelo instrutor.
+- **Feedback Visual**: Barra de progresso agora reflete pontuações decimais com suavidade.
+
+---
+
 ## 📦 Tecnologias
 
 - React + TypeScript + Vite

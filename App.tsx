@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { INITIAL_DATA, BELT_STYLES, BELT_GROUPS, WEEKDAYS, JIU_JITSU_TECHNIQUES } from './constants';
 import { Academy, AppData, Student, BeltColor, Team, TrainingSession, TrainingMedia, AcademySchedule, TimeRange, FinancialTransaction, FinancialType } from './types';
-import { IconAcademy, IconUsers, IconPlus, IconSparkles, IconBack, IconClock, IconEdit, IconTrash, IconSettings, IconCamera, IconClipboard, IconHistory, IconCalendar, IconCheck, IconMoney, IconWallet, IconAlert, IconLogout, IconMail, IconLock, IconUser, IconUserPlus, IconShield } from './components/icons';
+import { IconAcademy, IconUsers, IconPlus, IconSparkles, IconBack, IconClock, IconEdit, IconTrash, IconSettings, IconCamera, IconClipboard, IconHistory, IconCalendar, IconCheck, IconMoney, IconWallet, IconAlert, IconLogout, IconMail, IconLock, IconUser, IconUserPlus, IconShield, IconX } from './components/icons';
 import { Modal } from './components/Modal';
 import { generateTeamAnalysis } from './services/GeminiService';
 import * as ParseService from './services/parseService';
@@ -61,6 +61,9 @@ const App = () => {
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
 
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [isProfessorModalOpen, setIsProfessorModalOpen] = useState(false);
+  const [newProfessor, setNewProfessor] = useState<{ email: string, name: string, password?: string, selectedAcademyIds: string[] }>({ email: '', name: '', password: '', selectedAcademyIds: [] });
+
   const [isTrainingModalOpen, setIsTrainingModalOpen] = useState(false);
   const [isDeleteTrainingModalOpen, setIsDeleteTrainingModalOpen] = useState(false);
   const [trainingToDelete, setTrainingToDelete] = useState<string | null>(null);
@@ -458,6 +461,16 @@ const App = () => {
 
     try {
       const savedTeam = await ParseService.saveTeam(newTeam);
+
+      // Sincronizar mudança de senha no objeto _User para o admin global
+      if (newTeam.adminPassword) {
+        const currentUser = ParseService.getCurrentUser();
+        if (currentUser && currentUser.get('email') === newTeam.adminEmail) {
+          currentUser.setPassword(newTeam.adminPassword);
+          await currentUser.save();
+        }
+      }
+
       setData(prev => ({
         ...prev,
         team: { ...prev.team, ...savedTeam }
@@ -467,6 +480,47 @@ const App = () => {
     } catch (e) {
       console.error(e);
       alert("Erro ao salvar configurações da equipe.");
+    }
+  };
+
+  const handleSaveProfessor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProfessor.email || newProfessor.selectedAcademyIds.length === 0) {
+      alert("Informe o e-mail e selecione pelo menos uma academia.");
+      return;
+    }
+
+    try {
+      const normalizedEmail = newProfessor.email.trim().toLowerCase();
+      // Salva o professor como um objeto ProfessorAccount real.
+      await ParseService.saveProfessorAccount(normalizedEmail, newProfessor.name, newProfessor.password);
+
+      // Iterate over ALL academies to update allowedEmails
+      for (const academy of data.academies) {
+        let updatedAllowedEmails = [...(academy.allowedEmails || [])];
+        const isSelected = newProfessor.selectedAcademyIds.includes(academy.id);
+        const emailIndex = updatedAllowedEmails.findIndex(e => e.trim().toLowerCase() === normalizedEmail);
+
+        let changed = false;
+        if (isSelected && emailIndex === -1) {
+          updatedAllowedEmails.push(normalizedEmail);
+          changed = true;
+        } else if (!isSelected && emailIndex !== -1) {
+          updatedAllowedEmails.splice(emailIndex, 1);
+          changed = true;
+        }
+
+        if (changed) {
+          await ParseService.saveAcademy({ ...academy, allowedEmails: updatedAllowedEmails });
+        }
+      }
+
+      await refreshData();
+      setIsProfessorModalOpen(false);
+      showNotification('Professor salvo com sucesso!');
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao salvar professor.");
     }
   };
 
@@ -1316,9 +1370,11 @@ const App = () => {
                           <IconAcademy className="w-8 h-8 text-gray-400" />
                         )}
                       </div>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-                        {studentCount} Alunos
-                      </span>
+                      {isAuthenticated && (
+                        <span className={`text-xs font-semibold px-2 py-1 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                          {studentCount} {studentCount === 1 ? 'Aluno' : 'Alunos'}
+                        </span>
+                      )}
                     </div>
                     <h3 className={`text-xl font-bold mb-1 relative z-10 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{academy.name}</h3>
                     <p className={`text-sm mb-2 relative z-10 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{academy.address}</p>
@@ -1345,18 +1401,17 @@ const App = () => {
                         <span className="truncate max-w-[120px] inline-block align-bottom">{academy.instructorName}</span>
                       </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePublicAcademyClick(academy.id);
-                        }}
-                        className={`ml-2 px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all transform hover:scale-105 ${isAuthenticated
-                          ? 'bg-jiu-primary text-white hover:bg-blue-800'
-                          : 'bg-green-600 text-white hover:bg-green-700'
-                          }`}
-                      >
-                        {isAuthenticated ? 'Acessar' : 'Login'}
-                      </button>
+                      {isAuthenticated && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePublicAcademyClick(academy.id);
+                          }}
+                          className={`ml-2 px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all transform hover:scale-105 bg-jiu-primary text-white hover:bg-blue-800`}
+                        >
+                          Acessar
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -1544,33 +1599,33 @@ const App = () => {
             <div className={`grid grid-cols-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <button
                 onClick={() => setActiveAcademyTab('students')}
-                className={`py-3 font-medium text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center transition-colors
+                className={`py-3 font-medium text-[10px] sm:text-xs md:text-sm flex flex-col sm:flex-row items-center justify-center transition-colors
                   ${activeAcademyTab === 'students'
                     ? 'border-b-2 border-jiu-primary text-jiu-primary'
                     : `text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}`}
               >
-                <IconUsers className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 mb-1 sm:mb-0" />
-                <span className="text-center">Tatame (Alunos)</span>
+                <IconUsers className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 mb-1 sm:mb-0 shrink-0" />
+                <span className="text-center leading-tight">Tatame (Alunos)</span>
               </button>
               <button
                 onClick={() => setActiveAcademyTab('trainings')}
-                className={`py-3 font-medium text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center transition-colors
+                className={`py-3 font-medium text-[10px] sm:text-xs md:text-sm flex flex-col sm:flex-row items-center justify-center transition-colors
                   ${activeAcademyTab === 'trainings'
                     ? 'border-b-2 border-jiu-primary text-jiu-primary'
                     : `text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}`}
               >
-                <IconClipboard className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 mb-1 sm:mb-0" />
-                <span className="text-center">Aulas / Treinos</span>
+                <IconClipboard className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 mb-1 sm:mb-0 shrink-0" />
+                <span className="text-center leading-tight">Aulas / Treinos</span>
               </button>
               <button
                 onClick={() => setActiveAcademyTab('financial')}
-                className={`py-3 font-medium text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center transition-colors
+                className={`py-3 font-medium text-[10px] sm:text-xs md:text-sm flex flex-col sm:flex-row items-center justify-center transition-colors
                   ${activeAcademyTab === 'financial'
                     ? 'border-b-2 border-green-600 text-green-600'
                     : `text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}`}
               >
-                <IconMoney className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 mb-1 sm:mb-0" />
-                <span className="text-center">Financeiro</span>
+                <IconMoney className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 mb-1 sm:mb-0 shrink-0" />
+                <span className="text-center leading-tight">Financeiro</span>
               </button>
             </div>
 
@@ -1934,14 +1989,14 @@ const App = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center border-b pb-4 dark:border-gray-700">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 dark:border-gray-700 gap-3">
                   <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Situação dos Alunos</h3>
                   <button
                     onClick={handleOpenTransactionModal}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md flex items-center transition-colors text-sm font-medium"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 md:px-3.5 md:py-2 rounded-lg shadow-md flex items-center justify-center transition-all transform hover:scale-105 text-xs md:text-sm font-bold whitespace-nowrap"
                   >
-                    <IconPlus className="w-4 h-4 mr-2" />
-                    Lançar Pagamento / Cobrança
+                    <IconPlus className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1 md:mr-1.5" />
+                    Nova Cobrança
                   </button>
                 </div>
 
@@ -1998,18 +2053,18 @@ const App = () => {
                               </p>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2 text-center mb-4">
-                              <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg border border-green-100 dark:border-green-900/30">
-                                <p className="text-[10px] text-green-600 dark:text-green-400 font-bold uppercase">Pago</p>
-                                <p className="text-sm font-bold text-green-700 dark:text-green-300">R${paidSum.toFixed(0)}</p>
+                            <div className="grid grid-cols-3 gap-1 md:gap-2 text-center mb-4">
+                              <div className="bg-green-50 dark:bg-green-900/20 p-1.5 md:p-2 rounded-lg border border-green-100 dark:border-green-900/30 overflow-hidden">
+                                <p className="text-[9px] md:text-[10px] text-green-600 dark:text-green-400 font-bold uppercase truncate">Pago</p>
+                                <p className="text-xs md:text-sm font-bold text-green-700 dark:text-green-300 truncate">R${paidSum.toFixed(0)}</p>
                               </div>
-                              <div className="bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-100 dark:border-red-900/30">
-                                <p className="text-[10px] text-red-600 dark:text-red-400 font-bold uppercase">Devendo</p>
-                                <p className="text-sm font-bold text-red-700 dark:text-red-300">R${overdueSum.toFixed(0)}</p>
+                              <div className="bg-red-50 dark:bg-red-900/20 p-1.5 md:p-2 rounded-lg border border-red-100 dark:border-red-900/30 overflow-hidden">
+                                <p className="text-[9px] md:text-[10px] text-red-600 dark:text-red-400 font-bold uppercase truncate">Falta</p>
+                                <p className="text-xs md:text-sm font-bold text-red-700 dark:text-red-300 truncate">R${overdueSum.toFixed(0)}</p>
                               </div>
-                              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
-                                <p className="text-[10px] text-yellow-600 dark:text-yellow-400 font-bold uppercase">Futuro</p>
-                                <p className="text-sm font-bold text-yellow-700 dark:text-yellow-300">R${pendingSum.toFixed(0)}</p>
+                              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-1.5 md:p-2 rounded-lg border border-yellow-100 dark:border-yellow-900/30 overflow-hidden">
+                                <p className="text-[9px] md:text-[10px] text-yellow-600 dark:text-yellow-400 font-bold uppercase truncate">Futuro</p>
+                                <p className="text-xs md:text-sm font-bold text-yellow-700 dark:text-yellow-300 truncate">R${pendingSum.toFixed(0)}</p>
                               </div>
                             </div>
 
@@ -2821,7 +2876,8 @@ const App = () => {
                 type="button"
                 onClick={() => {
                   setIsTeamModalOpen(false);
-                  handleOpenNewAcademyModal();
+                  setNewProfessor({ email: '', name: '', selectedAcademyIds: [] });
+                  setIsProfessorModalOpen(true);
                 }}
                 className="bg-jiu-primary hover:bg-blue-800 text-white px-3 py-1 rounded-md text-xs font-bold shadow-sm flex items-center transition-all transform hover:scale-105"
               >
@@ -2829,31 +2885,50 @@ const App = () => {
               </button>
             </div>
             <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
-              {data.academies.length === 0 ? (
-                <p className="text-xs text-gray-500 italic text-center py-2">Nenhuma academia/professor cadastrado.</p>
-              ) : (
-                data.academies.map(academy => (
-                  <div key={academy.id} className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-100 shadow-sm text-sm hover:border-blue-200 transition-colors">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-gray-800">{academy.instructorName}</span>
-                      <span className="text-[10px] text-gray-500 uppercase font-medium">{academy.name}</span>
+              {(() => {
+                const allProfessorsMap = new Map<string, { academies: Academy[], name: string }>();
+                data.academies.forEach(acc => {
+                  (acc.allowedEmails || []).forEach(email => {
+                    const e = email.trim().toLowerCase();
+                    if (!allProfessorsMap.has(e)) {
+                      allProfessorsMap.set(e, { academies: [], name: acc.instructorName || 'Professor' });
+                    }
+                    allProfessorsMap.get(e)!.academies.push(acc);
+                  });
+                });
+                const allProfessors = Array.from(allProfessorsMap.entries()).map(([email, info]) => ({ email, ...info }));
+                return allProfessors.length === 0 ? (
+                  <p className="text-xs text-gray-500 italic text-center py-2">Nenhum professor cadastrado.</p>
+                ) : (
+                  allProfessors.map(prof => (
+                    <div key={prof.email} className="flex flex-col p-3 bg-white rounded-lg border border-gray-100 shadow-sm text-sm hover:border-blue-200 transition-colors">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-bold text-gray-800">{prof.email}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsTeamModalOpen(false);
+                            setNewProfessor({
+                              email: prof.email,
+                              name: prof.name,
+                              selectedAcademyIds: prof.academies.map(a => a.id)
+                            });
+                            setIsProfessorModalOpen(true);
+                          }}
+                          className="text-[10px] font-bold text-jiu-primary hover:text-blue-800 flex items-center bg-blue-50 px-2 py-1 rounded"
+                        >
+                          <IconEdit className="w-3 h-3 mr-1" /> Editar
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {prof.academies.map(acc => (
+                          <span key={acc.id} className="text-[10px] text-blue-600 font-mono bg-blue-100/50 border border-blue-200 px-1.5 py-0.5 rounded shadow-sm">{acc.name}</span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-[11px] text-blue-600 font-mono bg-blue-50 px-1.5 py-0.5 rounded">{academy.allowedEmails?.[0] || 'Sem email'}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsTeamModalOpen(false);
-                          handleEditAcademy(academy);
-                        }}
-                        className="text-[10px] font-bold text-jiu-primary hover:text-blue-800 flex items-center"
-                      >
-                        <IconEdit className="w-2.5 h-2.5 mr-0.5" /> Editar Acesso
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
+                  ))
+                );
+              })()}
             </div>
           </div>
 
@@ -3530,6 +3605,95 @@ const App = () => {
             {notificationType === 'error' ? <IconAlert className="w-4 h-4" /> : <IconCheck className="w-4 h-4" />}
           </div>
           <span className="font-medium text-sm">{notification}</span>
+        </div>
+      )}
+
+      {/* Edit Professor Modal */}
+      {isProfessorModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60] backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 md:p-6 bg-gradient-to-r from-jiu-primary to-blue-800 text-white flex justify-between items-center shrink-0">
+              <h3 className="text-lg md:text-xl font-bold flex items-center">
+                <IconUser className="w-5 h-5 md:w-6 md:h-6 mr-2" />
+                {newProfessor.email && data.academies.some(a => (a.allowedEmails || []).includes(newProfessor.email)) ? 'Editar Professor' : 'Novo Professor'}
+              </h3>
+              <button onClick={() => setIsProfessorModalOpen(false)} className="text-white hover:text-red-200 transition-colors p-1">
+                <IconX className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProfessor} className="p-4 md:p-6 space-y-4 overflow-y-auto flex-1">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email do Professor *</label>
+                <input
+                  required
+                  type="email"
+                  className="w-full rounded-lg border-gray-300 border p-2.5 bg-gray-50 focus:bg-white transition-colors"
+                  value={newProfessor.email || ''}
+                  onChange={e => setNewProfessor({ ...newProfessor, email: e.target.value })}
+                  disabled={newProfessor.email !== '' && data.academies.some(a => (a.allowedEmails || []).map(e => e.toLowerCase()).includes(newProfessor.email.toLowerCase()))}
+                />
+                <p className="text-xs text-gray-500 mt-1">O email será usado para o login unificado do professor.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Senha do Professor</label>
+                <input
+                  type="text"
+                  placeholder="Ex: prof123 (Em branco para manter a atual)"
+                  className="w-full rounded-lg border-gray-300 border p-2.5 bg-gray-50 focus:bg-white transition-colors"
+                  value={newProfessor.password || ''}
+                  onChange={e => setNewProfessor({ ...newProfessor, password: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Academias Vinculadas *</label>
+                <div className="space-y-2 border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto bg-gray-50">
+                  {data.academies.length === 0 ? (
+                    <p className="text-xs text-gray-500 italic">Nenhuma academia cadastrada na equipe.</p>
+                  ) : (
+                    data.academies.map(academy => (
+                      <label key={academy.id} className="flex items-center p-2 hover:bg-blue-100 rounded cursor-pointer transition-colors border border-transparent hover:border-blue-200">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-jiu-primary border-gray-300 rounded focus:ring-jiu-primary"
+                          checked={newProfessor.selectedAcademyIds.includes(academy.id)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setNewProfessor({ ...newProfessor, selectedAcademyIds: [...newProfessor.selectedAcademyIds, academy.id] });
+                            } else {
+                              setNewProfessor({ ...newProfessor, selectedAcademyIds: newProfessor.selectedAcademyIds.filter(id => id !== academy.id) });
+                            }
+                          }}
+                        />
+                        <div className="ml-3 flex flex-col">
+                          <span className="text-sm font-bold text-gray-800">{academy.name}</span>
+                          <span className="text-[10px] text-gray-500">{academy.instructorName}</span>
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-gray-100 gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setIsProfessorModalOpen(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-jiu-primary hover:bg-blue-800 text-white px-6 py-2 rounded-lg shadow-md font-bold transition-transform active:scale-95 text-sm"
+                >
+                  Salvar Acessos
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
