@@ -1,0 +1,4 @@
+## 2025-03-02 - Ensure basic HTTP security headers are enforced in server.js
+**Vulnerability:** The application server (Express) was missing basic security headers (like X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security, and Referrer-Policy) and also exposed the Express technology stack via the X-Powered-By header.
+**Learning:** These missing headers could allow clickjacking attacks, MIME-type sniffing, or expose technology details to attackers, which are commonly missed in default Express installations.
+**Prevention:** We introduced a middleware enforcing strict security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`, `Referrer-Policy`) and used `app.disable('x-powered-by')`. This pattern should be consistently applied to any Node.js/Express service.
