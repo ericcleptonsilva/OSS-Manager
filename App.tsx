@@ -1165,11 +1165,11 @@ const App = () => {
 
         <main className="container mx-auto px-4 py-8">
           {/* Banner Hero */}
-          <div className="w-full h-64 md:h-96 bg-gray-300 dark:bg-gray-800 rounded-2xl mb-8 flex items-center justify-center shadow-inner overflow-hidden relative">
+          <div className="w-full flex items-center justify-center mb-8 bg-black rounded-2xl overflow-hidden relative shadow-inner">
             {data?.team?.banner ? (
-              <img src={data.team.banner} alt="Team Banner" className="w-full h-full object-cover" />
+              <img src={data.team.banner} alt="Team Banner" className="w-full h-auto max-h-[500px] object-contain object-center bg-black" />
             ) : (
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center h-64 md:h-96 bg-gray-300 dark:bg-gray-800 justify-center w-full">
                 <IconCamera className="w-20 h-20 text-gray-400 opacity-20 mb-4" />
                 <span className="text-gray-400 opacity-50 font-bold uppercase tracking-widest">OSS Manager</span>
               </div>
@@ -1674,12 +1674,12 @@ const App = () => {
                               }}
                             >
                               {student.photo ? (
-                                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md z-10 relative">
+                                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-white shadow-md z-10 relative">
                                   <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
                                 </div>
                               ) : (
-                                <div className="w-16 h-16 rounded-full bg-black/10 flex items-center justify-center z-10 border-2 border-white/50">
-                                  <span className="text-2xl font-bold opacity-50">{student.name.charAt(0)}</span>
+                                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-black/10 flex items-center justify-center z-10 border-2 border-white/50">
+                                  <span className="text-3xl md:text-4xl font-bold opacity-50">{student.name.charAt(0)}</span>
                                 </div>
                               )}
                             </div>
