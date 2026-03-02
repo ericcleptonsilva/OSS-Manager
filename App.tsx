@@ -1164,12 +1164,16 @@ const App = () => {
         <div className="h-20 bg-gray-800 shadow-lg border-b border-gray-700 animate-pulse mb-8"></div>
 
         <main className="container mx-auto px-4 py-8">
-          {/* Banner Skeleton - Increased Size as Requested */}
-          <div className="w-full h-64 md:h-96 bg-gray-300 dark:bg-gray-800 rounded-2xl animate-pulse mb-8 flex items-center justify-center shadow-inner">
-            <div className="flex flex-col items-center">
-              <IconCamera className="w-20 h-20 text-gray-400 opacity-20 mb-4" />
-              <span className="text-gray-400 opacity-50 font-bold uppercase tracking-widest">Carregando Equipe...</span>
-            </div>
+          {/* Banner Hero */}
+          <div className="w-full h-64 md:h-96 bg-gray-300 dark:bg-gray-800 rounded-2xl mb-8 flex items-center justify-center shadow-inner overflow-hidden relative">
+            {data?.team?.banner ? (
+              <img src={data.team.banner} alt="Team Banner" className="w-full h-full object-cover" />
+            ) : (
+              <div className="flex flex-col items-center">
+                <IconCamera className="w-20 h-20 text-gray-400 opacity-20 mb-4" />
+                <span className="text-gray-400 opacity-50 font-bold uppercase tracking-widest">OSS Manager</span>
+              </div>
+            )}
           </div>
 
           {/* Title Skeleton */}
@@ -2820,6 +2824,24 @@ const App = () => {
               </label>
             </div>
             <span className="text-xs text-gray-500">Clique para alterar o logo da equipe</span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center">
+            <span className="text-sm font-medium text-gray-700 w-full text-left mb-1">Banner Principal (Página Pública)</span>
+            <div className="w-full h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 mb-2 overflow-hidden relative group flex items-center justify-center">
+              {newTeam.banner ? (
+                <img src={newTeam.banner} alt="Banner Preview" className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                  <IconCamera className="w-8 h-8 mb-2" />
+                  <span className="text-xs">Tamanho recomendado: 1200x500px</span>
+                </div>
+              )}
+              <label className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white text-sm font-bold">
+                Alterar Imagem de Banner
+                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'team-banner')} />
+              </label>
+            </div>
           </div>
 
           <div>
