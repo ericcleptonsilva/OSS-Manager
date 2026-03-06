@@ -153,6 +153,7 @@ export const fetchFullData = async (): Promise<AppData> => {
   try {
     // 1. Fetch Team (Singleton for this app mostly)
     const teamQuery = new Parse.Query('Team');
+    teamQuery.exclude('adminPassword');
     const teamObj = await teamQuery.first();
     let team: Team;
 
@@ -172,11 +173,13 @@ export const fetchFullData = async (): Promise<AppData> => {
 
     // 2. Fetch Academies
     const academyQuery = new Parse.Query('Academy');
+    academyQuery.exclude('adminPassword');
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapAcademy);
 
     // 3. Fetch Students
     const studentQuery = new Parse.Query('Student');
+    studentQuery.exclude('password');
     const studentObjs = await studentQuery.limit(1000).find();
     const students = studentObjs.map(mapStudent);
 
@@ -185,6 +188,7 @@ export const fetchFullData = async (): Promise<AppData> => {
     let trainingObjs: Parse.Object[] = [];
     try {
       const trainingQuery = new Parse.Query('TrainingSession');
+      trainingQuery.exclude('media');
       // IMPORTANT: Do NOT use .descending('date') here!
       // Reason: TrainingSession docs contain large base64 'media' fields.
       // MongoDB exceeds its 32MB RAM sort limit without an index on 'date'.
