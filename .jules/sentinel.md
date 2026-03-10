@@ -1,0 +1,4 @@
+## 2024-05-14 - Removed hardcoded Global Admin backdoor
+**Vulnerability:** A hardcoded backdoor credential (`admin@oss.com` / `admin`) was present in `services/parseService.ts` (`performCustomLogin`), allowing unrestricted global admin access to the application regardless of the `Team` configuration in the database.
+**Learning:** Hardcoded credentials are a critical security risk and a common vulnerability pattern, especially when left over from development or testing phases. They bypass all established authentication mechanisms and provide immediate, unauthorized high-level access.
+**Prevention:** Never hardcode credentials in the source code. All authentication must rely on securely stored credentials (e.g., in the database, with proper hashing) or environment variables for configuration. Implement pre-commit hooks or CI/CD pipeline checks to scan for hardcoded secrets before code is merged.
