@@ -1015,9 +1015,8 @@ const App = () => {
     }
   };
 
-  const handleMarkAsPaid = async (transactionId: string) => {
+  const handleMarkAsPaid = useCallback(async (transactionId: string) => {
     const paidDate = new Date().toISOString().split('T')[0];
-    // Optimistic local update — sem buscar tudo do servidor novamente
     setData(prev => ({
       ...prev,
       academies: prev.academies.map(ac => ({
@@ -1031,14 +1030,12 @@ const App = () => {
       await ParseService.saveTransaction({ id: transactionId, paidDate });
       showNotification('Pagamento confirmado!');
     } catch (e) {
-      // Reverte em caso de erro
       await refreshData();
       alert("Erro ao confirmar pagamento.");
     }
-  };
+  }, [refreshData, showNotification]);
 
-  const handleUndoPayment = async (transactionId: string) => {
-    // Desfaz pagamento — remove paidDate (volta para pendente)
+  const handleUndoPayment = useCallback(async (transactionId: string) => {
     setData(prev => ({
       ...prev,
       academies: prev.academies.map(ac => ({
@@ -1055,11 +1052,10 @@ const App = () => {
       await refreshData();
       alert("Erro ao reverter pagamento.");
     }
-  };
+  }, [refreshData, showNotification]);
 
-  const handleDeleteTransaction = async (transactionId: string) => {
+  const handleDeleteTransaction = useCallback(async (transactionId: string) => {
     if (!window.confirm("Tem certeza que deseja excluir esta cobrança?")) return;
-    // Optimistic local update
     setData(prev => ({
       ...prev,
       academies: prev.academies.map(ac => ({
@@ -1074,7 +1070,7 @@ const App = () => {
       await refreshData();
       alert("Erro ao excluir cobrança.");
     }
-  };
+  }, [refreshData, showNotification]);
 
   const handleClearStudentFinancials = async (studentId: string) => {
     if (!window.confirm("ATENÇÃO: Isso excluirá TODAS as transações financeiras deste aluno (histórico completo). Deseja continuar?")) return;
@@ -1105,11 +1101,11 @@ const App = () => {
     return Math.max(0, possibleTrainings.length - attendedCount);
   };
 
-  const isOverdue = (transaction: FinancialTransaction) => {
+  const isOverdue = useCallback((transaction: FinancialTransaction) => {
     if (transaction.paidDate) return false;
     const today = new Date().toISOString().split('T')[0];
     return transaction.dueDate < today;
-  };
+  }, []);
 
   const handleUnpublishMedia = async (trainingId: string, mediaIndex: number) => {
     if (!window.confirm("Remover esta foto da galeria pública?")) return;
@@ -1147,51 +1143,82 @@ const App = () => {
     }
   };
 
-  // --- Computed Data ---
-  const selectedAcademy = data.academies.find(a => a.id === selectedAcademyId);
-  const selectedAcademyStudents = data.students.filter(s => s.academyId === selectedAcademyId);
-  const selectedStudent = data.students.find(s => s.id === selectedStudentId);
-  const studentTrainings = selectedStudent && selectedAcademy
-    ? (selectedAcademy.trainings || []).filter(t => t.studentIds.includes(selectedStudent.id))
-    : [];
+  // --- Computed Data (memoizados para evitar re-cálculo desnecessário) ---
+  const selectedAcademy = useMemo(
+    () => data.academies.find(a => a.id === selectedAcademyId),
+    [data.academies, selectedAcademyId]
+  );
+  const selectedAcademyStudents = useMemo(
+    () => data.students.filter(s => s.academyId === selectedAcademyId),
+    [data.students, selectedAcademyId]
+  );
+  const selectedStudent = useMemo(
+    () => data.students.find(s => s.id === selectedStudentId),
+    [data.students, selectedStudentId]
+  );
+  const studentTrainings = useMemo(
+    () => selectedStudent && selectedAcademy
+      ? (selectedAcademy.trainings || []).filter(t => t.studentIds.includes(selectedStudent.id))
+      : [],
+    [selectedStudent, selectedAcademy]
+  );
 
-  const academyFinancials = selectedAcademy?.financials || [];
-  const totalRevenue = academyFinancials.filter(f => f.paidDate).reduce((acc, curr) => acc + curr.amount, 0);
-  const totalPending = academyFinancials.filter(f => !f.paidDate && !isOverdue(f)).reduce((acc, curr) => acc + curr.amount, 0);
-  const totalOverdue = academyFinancials.filter(f => isOverdue(f)).reduce((acc, curr) => acc + curr.amount, 0);
+  const academyFinancials = useMemo(
+    () => selectedAcademy?.financials || [],
+    [selectedAcademy]
+  );
+  const totalRevenue = useMemo(
+    () => academyFinancials.filter(f => f.paidDate).reduce((acc, curr) => acc + curr.amount, 0),
+    [academyFinancials]
+  );
+  const totalPending = useMemo(
+    () => academyFinancials.filter(f => !f.paidDate && !isOverdue(f)).reduce((acc, curr) => acc + curr.amount, 0),
+    [academyFinancials, isOverdue]
+  );
+  const totalOverdue = useMemo(
+    () => academyFinancials.filter(f => isOverdue(f)).reduce((acc, curr) => acc + curr.amount, 0),
+    [academyFinancials, isOverdue]
+  );
 
-  const studentFinancialCards = selectedAcademyStudents.map(student => {
-    const studentTxs = academyFinancials.filter(t => t.studentId === student.id);
-    const paidSum = studentTxs.filter(t => t.paidDate).reduce((acc, c) => acc + c.amount, 0);
-    const overdueSum = studentTxs.filter(t => isOverdue(t)).reduce((acc, c) => acc + c.amount, 0);
-    const pendingSum = studentTxs.filter(t => !t.paidDate && !isOverdue(t)).reduce((acc, c) => acc + c.amount, 0);
-    const pendingTxs = studentTxs.filter(t => !t.paidDate).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-    const nextPayment = pendingTxs.length > 0 ? pendingTxs[0] : null;
-    const lastMonthly = studentTxs.filter(t => t.type === FinancialType.MONTHLY).sort((a, b) => b.dueDate.localeCompare(a.dueDate))[0];
-    const monthlyAmount = lastMonthly ? lastMonthly.amount : 0;
-    return { student, paidSum, overdueSum, pendingSum, nextPayment, monthlyAmount, transactions: studentTxs };
-  });
+  const studentFinancialCards = useMemo(() =>
+    selectedAcademyStudents.map(student => {
+      const studentTxs = academyFinancials.filter(t => t.studentId === student.id);
+      const paidSum = studentTxs.filter(t => t.paidDate).reduce((acc, c) => acc + c.amount, 0);
+      const overdueSum = studentTxs.filter(t => isOverdue(t)).reduce((acc, c) => acc + c.amount, 0);
+      const pendingSum = studentTxs.filter(t => !t.paidDate && !isOverdue(t)).reduce((acc, c) => acc + c.amount, 0);
+      const pendingTxs = studentTxs.filter(t => !t.paidDate).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+      const nextPayment = pendingTxs.length > 0 ? pendingTxs[0] : null;
+      const lastMonthly = studentTxs.filter(t => t.type === FinancialType.MONTHLY).sort((a, b) => b.dueDate.localeCompare(a.dueDate))[0];
+      const monthlyAmount = lastMonthly ? lastMonthly.amount : 0;
+      return { student, paidSum, overdueSum, pendingSum, nextPayment, monthlyAmount, transactions: studentTxs };
+    }),
+    [selectedAcademyStudents, academyFinancials, isOverdue]
+  );
 
-  const beltDistribution = selectedAcademyStudents.reduce((acc, student) => {
-    const found = acc.find(item => item.name === student.belt);
-    if (found) { found.value++; } else { acc.push({ name: student.belt, value: 1 }); }
-    return acc;
-  }, [] as { name: string; value: number }[]);
+  const beltDistribution = useMemo(() =>
+    selectedAcademyStudents.reduce((acc, student) => {
+      const found = acc.find(item => item.name === student.belt);
+      if (found) { found.value++; } else { acc.push({ name: student.belt, value: 1 }); }
+      return acc;
+    }, [] as { name: string; value: number }[]),
+    [selectedAcademyStudents]
+  );
 
-  const attendanceByDay = selectedAcademy && selectedAcademy.schedule ? selectedAcademy.schedule.map(scheduleItem => {
-    const trainingsOnDay = (selectedAcademy.trainings || []).filter(t => {
-      const tDate = new Date(t.date + 'T12:00:00');
-      return WEEKDAYS[tDate.getDay()] === scheduleItem.day;
-    });
-    const totalPresence = trainingsOnDay.reduce((acc, t) => acc + t.studentIds.length, 0);
-    return {
-      name: scheduleItem.day.split('-')[0].substring(0, 3),
-      fullName: scheduleItem.day,
-      count: totalPresence
-    };
-  }) : [];
-
-  // --- Render ---
+  const attendanceByDay = useMemo(() =>
+    selectedAcademy && selectedAcademy.schedule ? selectedAcademy.schedule.map(scheduleItem => {
+      const trainingsOnDay = (selectedAcademy.trainings || []).filter(t => {
+        const tDate = new Date(t.date + 'T12:00:00');
+        return WEEKDAYS[tDate.getDay()] === scheduleItem.day;
+      });
+      const totalPresence = trainingsOnDay.reduce((acc, t) => acc + t.studentIds.length, 0);
+      return {
+        name: scheduleItem.day.split('-')[0].substring(0, 3),
+        fullName: scheduleItem.day,
+        count: totalPresence
+      };
+    }) : [],
+    [selectedAcademy]
+  );
 
   // Initial Public Load Skeleton (Splash Screen)
   if (!isPublicDataLoaded) {
