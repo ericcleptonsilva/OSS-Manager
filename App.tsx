@@ -2163,43 +2163,74 @@ const App = () => {
                               </div>
                             </div>
 
-                            {/* Histórico Pago — colapsável */}
+                            {/* Histórico Pago — colapsável com datas de criação/alteração */}
                             {cardData.transactions.filter(t => t.paidDate).length > 0 && (
                               <details className="mt-3">
-                                <summary className="text-xs text-gray-400 font-medium uppercase cursor-pointer select-none flex items-center gap-1 hover:text-gray-600 transition-colors">
+                                <summary className="text-xs text-gray-400 font-medium uppercase cursor-pointer select-none hover:text-gray-600 transition-colors flex items-center gap-1">
                                   <span>✅ Histórico Pago ({cardData.transactions.filter(t => t.paidDate).length})</span>
                                 </summary>
-                                <div className="mt-2 max-h-36 overflow-y-auto space-y-1 pr-1">
+                                <div className="mt-2 max-h-48 overflow-y-auto space-y-1.5 pr-1">
                                   {cardData.transactions
                                     .filter(t => t.paidDate)
                                     .sort((a, b) => (b.paidDate || '').localeCompare(a.paidDate || ''))
-                                    .map(tx => (
-                                      <div key={tx.id} className="flex justify-between items-center text-sm p-1.5 rounded bg-green-50 dark:bg-green-900/10">
-                                        <div className="flex flex-col">
-                                          <span className="text-xs font-bold text-green-700 dark:text-green-400">
-                                            Pago: {new Date((tx.paidDate || '') + 'T12:00:00').toLocaleDateString('pt-BR')}
-                                          </span>
-                                          <span className="text-[10px] text-gray-500 truncate max-w-[120px]">{tx.description || tx.type} — Venc: {new Date(tx.dueDate + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                                    .map(tx => {
+                                      const fmtDate = (iso?: string | null) =>
+                                        iso ? new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—';
+                                      const fmtDateTime = (iso?: string | null) =>
+                                        iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+                                      return (
+                                        <div key={tx.id} className="flex flex-col p-2 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 gap-1">
+                                          {/* Linha principal */}
+                                          <div className="flex justify-between items-center">
+                                            <div className="flex flex-col">
+                                              <span className="text-xs font-bold text-green-700 dark:text-green-400">
+                                                ✓ Pago em {fmtDate(tx.paidDate ? tx.paidDate + 'T12:00:00' : null)}
+                                              </span>
+                                              <span className="text-[10px] text-gray-500 truncate max-w-[130px]">
+                                                {tx.description || tx.type} — Venc: {fmtDate(tx.dueDate + 'T12:00:00')}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                              <span className="font-mono text-xs font-bold text-green-700 dark:text-green-400">R${tx.amount.toFixed(0)}</span>
+                                              <button
+                                                onClick={() => handleUndoPayment(tx.id)}
+                                                className="text-yellow-500 hover:text-yellow-700 p-1 bg-yellow-50 dark:bg-yellow-900/30 rounded text-sm"
+                                                title="Desfazer pagamento (voltar para pendente)"
+                                              >
+                                                ↩
+                                              </button>
+                                              <button
+                                                onClick={() => handleEditTransaction(tx)}
+                                                className="text-blue-400 hover:text-blue-600 p-1"
+                                                title="Editar"
+                                              >
+                                                <IconEdit className="w-3 h-3" />
+                                              </button>
+                                              <button
+                                                onClick={() => handleDeleteTransaction(tx.id)}
+                                                className="text-gray-400 hover:text-red-600 p-1"
+                                                title="Excluir"
+                                              >
+                                                <IconTrash className="w-3 h-3" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                          {/* Linha de datas de auditoria */}
+                                          <div className="flex gap-3 text-[9px] text-gray-400 border-t border-green-100 dark:border-green-900/30 pt-1">
+                                            {tx.createdAt && (
+                                              <span title="Data de criação do lançamento">
+                                                🕐 Criado: {fmtDateTime(tx.createdAt)}
+                                              </span>
+                                            )}
+                                            {tx.updatedAt && tx.updatedAt !== tx.createdAt && (
+                                              <span title="Última alteração" className="text-orange-400">
+                                                ✏️ Alterado: {fmtDateTime(tx.updatedAt)}
+                                              </span>
+                                            )}
+                                          </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                          <span className="font-mono text-xs text-green-700 dark:text-green-400 mr-1">R${tx.amount.toFixed(0)}</span>
-                                          <button
-                                            onClick={() => handleUndoPayment(tx.id)}
-                                            className="text-yellow-500 hover:text-yellow-700 p-1 bg-yellow-50 dark:bg-yellow-900/30 rounded"
-                                            title="Desfazer pagamento (voltar para pendente)"
-                                          >
-                                            ↩
-                                          </button>
-                                          <button
-                                            onClick={() => handleDeleteTransaction(tx.id)}
-                                            className="text-gray-400 hover:text-red-600 p-1"
-                                            title="Excluir"
-                                          >
-                                            <IconTrash className="w-3 h-3" />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ))
+                                      );
+                                    })
                                   }
                                 </div>
                               </details>
