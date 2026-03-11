@@ -57,6 +57,8 @@ export interface FinancialTransaction {
   dueDate: string; // Data de vencimento
   paidDate?: string | null; // Data do pagamento (se null, está em aberto)
   description?: string;
+  createdAt?: string; // Data de criação (Parse Server)
+  updatedAt?: string; // Data da última alteração (Parse Server)
 }
 
 export interface Student {

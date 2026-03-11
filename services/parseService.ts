@@ -233,7 +233,9 @@ export const fetchFullData = async (): Promise<AppData> => {
           amount: f.get('amount'),
           dueDate: f.get('dueDate'),
           paidDate: f.get('paidDate'),
-          description: f.get('description')
+          description: f.get('description'),
+          createdAt: f.createdAt ? f.createdAt.toISOString() : undefined,
+          updatedAt: f.updatedAt ? f.updatedAt.toISOString() : undefined,
         }));
     });
 
