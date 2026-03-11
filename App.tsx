@@ -1037,6 +1037,26 @@ const App = () => {
     }
   };
 
+  const handleUndoPayment = async (transactionId: string) => {
+    // Desfaz pagamento — remove paidDate (volta para pendente)
+    setData(prev => ({
+      ...prev,
+      academies: prev.academies.map(ac => ({
+        ...ac,
+        financials: ac.financials.map(f =>
+          f.id === transactionId ? { ...f, paidDate: null } : f
+        )
+      }))
+    }));
+    try {
+      await ParseService.saveTransaction({ id: transactionId, paidDate: null });
+      showNotification('Pagamento revertido!');
+    } catch (e) {
+      await refreshData();
+      alert("Erro ao reverter pagamento.");
+    }
+  };
+
   const handleDeleteTransaction = async (transactionId: string) => {
     if (!window.confirm("Tem certeza que deseja excluir esta cobrança?")) return;
     // Optimistic local update
@@ -2142,6 +2162,48 @@ const App = () => {
                                 )}
                               </div>
                             </div>
+
+                            {/* Histórico Pago — colapsável */}
+                            {cardData.transactions.filter(t => t.paidDate).length > 0 && (
+                              <details className="mt-3">
+                                <summary className="text-xs text-gray-400 font-medium uppercase cursor-pointer select-none flex items-center gap-1 hover:text-gray-600 transition-colors">
+                                  <span>✅ Histórico Pago ({cardData.transactions.filter(t => t.paidDate).length})</span>
+                                </summary>
+                                <div className="mt-2 max-h-36 overflow-y-auto space-y-1 pr-1">
+                                  {cardData.transactions
+                                    .filter(t => t.paidDate)
+                                    .sort((a, b) => (b.paidDate || '').localeCompare(a.paidDate || ''))
+                                    .map(tx => (
+                                      <div key={tx.id} className="flex justify-between items-center text-sm p-1.5 rounded bg-green-50 dark:bg-green-900/10">
+                                        <div className="flex flex-col">
+                                          <span className="text-xs font-bold text-green-700 dark:text-green-400">
+                                            Pago: {new Date((tx.paidDate || '') + 'T12:00:00').toLocaleDateString('pt-BR')}
+                                          </span>
+                                          <span className="text-[10px] text-gray-500 truncate max-w-[120px]">{tx.description || tx.type} — Venc: {new Date(tx.dueDate + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <span className="font-mono text-xs text-green-700 dark:text-green-400 mr-1">R${tx.amount.toFixed(0)}</span>
+                                          <button
+                                            onClick={() => handleUndoPayment(tx.id)}
+                                            className="text-yellow-500 hover:text-yellow-700 p-1 bg-yellow-50 dark:bg-yellow-900/30 rounded"
+                                            title="Desfazer pagamento (voltar para pendente)"
+                                          >
+                                            ↩
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteTransaction(tx.id)}
+                                            className="text-gray-400 hover:text-red-600 p-1"
+                                            title="Excluir"
+                                          >
+                                            <IconTrash className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))
+                                  }
+                                </div>
+                              </details>
+                            )}
                           </div>
                         </div>
                       );
