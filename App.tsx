@@ -3,6 +3,10 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { INITIAL_DATA, BELT_STYLES, BELT_GROUPS, WEEKDAYS, JIU_JITSU_TECHNIQUES } from './constants';
 import { Academy, AppData, Student, BeltColor, Team, TrainingSession, TrainingMedia, AcademySchedule, TimeRange, FinancialTransaction, FinancialType } from './types';
 import { IconAcademy, IconUsers, IconPlus, IconSparkles, IconBack, IconClock, IconEdit, IconTrash, IconSettings, IconCamera, IconClipboard, IconHistory, IconCalendar, IconCheck, IconMoney, IconWallet, IconAlert, IconLogout, IconMail, IconLock, IconUser, IconUserPlus, IconShield, IconX } from './components/icons';
+import StudentFinancialCard from './components/StudentFinancialCard';
+import StudentCard from './components/StudentCard';
+import TrainingCard from './components/TrainingCard';
+import AcademyCard from './components/AcademyCard';
 import { Modal } from './components/Modal';
 import { generateTeamAnalysis } from './services/GeminiService';
 import * as ParseService from './services/parseService';
@@ -137,13 +141,13 @@ const App = () => {
   }, []);
 
   // Fetch Data when Authenticated
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     if (!isAuthenticated) return;
     setIsLoadingData(true);
     const cloudData = await ParseService.fetchFullData();
     setData(cloudData);
     setIsLoadingData(false);
-  };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -332,13 +336,13 @@ const App = () => {
 
   const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
 
-  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+  const showNotification = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setNotification(message);
     setNotificationType(type);
     setTimeout(() => {
       setNotification(null);
     }, 3000);
-  };
+  }, []);
 
   // toggleDarkMode is imported from useTheme
 
@@ -564,74 +568,19 @@ const App = () => {
     setIsAcademyModalOpen(true);
   };
 
-  const handleSelectAcademy = (id: string) => {
+  const handleSelectAcademy = useCallback((id: string) => {
     setSelectedAcademyId(id);
     setSessionPrefs(prev => ({ ...prev, lastAcademyId: id }));
     setAiAnalysis(null);
     setActiveAcademyTab('students');
-  }
+  }, []);
 
   const handleBackToAcademies = () => {
     setSelectedAcademyId(null);
     setSessionPrefs(prev => ({ ...prev, lastAcademyId: null }));
   }
 
-  const handlePublicAcademyClick = (academyId: string) => {
-    const targetAcademy = data.academies.find(a => a.id === academyId);
-    if (!targetAcademy) return;
 
-    if (isAuthenticated) {
-      // If admin, always allow
-      if (userRole === 'admin') {
-        handleSelectAcademy(academyId);
-        return;
-      }
-
-      // If student, check if it is THEIR academy
-      if (userRole === 'student') {
-        if (selectedAcademyId === academyId) {
-          // Already there or allowed
-          handleSelectAcademy(academyId);
-        } else {
-          alert("Você só tem acesso à sua academia.");
-        }
-        return;
-      }
-
-      // If professor, check allowedEmails
-      // Note: We need the email from session or state.
-      // We can use loginEmail state if it persists, or better, get from LocalStorage or Parse User
-      const currentUser = ParseService.getCurrentUser();
-      let currentUserEmail = currentUser?.get('email');
-
-      if (!currentUserEmail) {
-        const stored = localStorage.getItem('oss_custom_session');
-        if (stored) {
-          currentUserEmail = JSON.parse(stored).email;
-        }
-      }
-
-      if (targetAcademy.allowedEmails && targetAcademy.allowedEmails.length > 0) {
-        // Normalize emails for case-insensitive comparison (Trimmed & Lowercase)
-        const normalizedAllowed = targetAcademy.allowedEmails.map(e => e.trim().toLowerCase());
-        const normalizedCurrent = currentUserEmail ? currentUserEmail.trim().toLowerCase() : '';
-
-        if (!normalizedCurrent || !normalizedAllowed.includes(normalizedCurrent)) {
-          // If denied, maybe they want to login as the professor for THIS academy?
-          // Prompt login
-          if (confirm("Você não tem permissão para esta academia com o usuário atual. Deseja fazer login com outra conta?")) {
-            setLoginTargetAcademyId(academyId);
-            setIsLoginModalOpen(true);
-          }
-          return;
-        }
-      }
-      handleSelectAcademy(academyId);
-    } else {
-      setLoginTargetAcademyId(academyId);
-      setIsLoginModalOpen(true);
-    }
-  };
 
   const handleScheduleChange = (day: string, action: 'toggleDay' | 'addRange' | 'removeRange' | 'updateRange', payload?: any) => {
     const currentSchedule = newAcademy.schedule || [];
@@ -690,24 +639,13 @@ const App = () => {
     setIsStudentModalOpen(true);
   };
 
-  const handleEditStudent = (student: Student) => {
-    setNewStudent({ ...student });
-    setIsStudentModalOpen(true);
-  };
 
-  const handleConfirmDeleteStudent = (studentId: string) => {
-    setStudentToDelete(studentId);
-    setIsDeleteStudentModalOpen(true);
-  };
 
-  const handleDeleteStudent = async () => {
+  const handleDeleteStudent = useCallback(async () => {
     if (!studentToDelete) return;
     try {
-      // 1. Delete student financials first
       await ParseService.deleteAllTransactionsForStudent(studentToDelete);
-      // 2. Delete student object
       await ParseService.deleteObject('Student', studentToDelete);
-
       await refreshData();
       setStudentToDelete(null);
       setIsDeleteStudentModalOpen(false);
@@ -716,9 +654,9 @@ const App = () => {
       console.error(e);
       alert("Erro ao excluir aluno.");
     }
-  };
+  }, [studentToDelete, refreshData, showNotification]);
 
-  const handleUpdateStudentDegree = async (studentId: string, degree: number) => {
+  const handleUpdateStudentDegree = useCallback(async (studentId: string, degree: number) => {
     if (userRole !== 'admin') return;
     const student = data.students.find(s => s.id === studentId);
     if (!student) return;
@@ -727,7 +665,6 @@ const App = () => {
     const finalDegree = newDegree < 0 ? 0 : newDegree;
 
     try {
-      // Reset stars if we are changing degree (optional logic, but makes sense for "evolution")
       await ParseService.saveStudent({ id: studentId, degrees: finalDegree, progressStars: 0 });
       setData(prev => ({
         ...prev,
@@ -736,7 +673,75 @@ const App = () => {
     } catch (e) {
       console.error("Erro ao atualizar grau", e);
     }
-  };
+  }, [userRole, data.students]);
+
+  const handleEditStudent = useCallback((student: Student) => {
+    setNewStudent({ ...student });
+    setIsStudentModalOpen(true);
+  }, []);
+
+  const handleConfirmDeleteStudent = useCallback((studentId: string) => {
+    setStudentToDelete(studentId);
+    setIsDeleteStudentModalOpen(true);
+  }, []);
+
+  const handleOpenStudentProfile = useCallback((studentId: string) => {
+    setSelectedStudentId(studentId);
+  }, []);
+
+  const handleEditTraining = useCallback((training: TrainingSession) => {
+    setNewTraining({ ...training, media: training.media || [] });
+    setCurrentTechniqueToAdd(JIU_JITSU_TECHNIQUES[0]);
+    setIsTrainingModalOpen(true);
+  }, []);
+
+  const handleConfirmDeleteTraining = useCallback((trainingId: string) => {
+    setTrainingToDelete(trainingId);
+    setIsDeleteTrainingModalOpen(true);
+  }, []);
+
+  const handlePublicAcademyClick = useCallback((academyId: string) => {
+    const targetAcademy = data.academies.find(a => a.id === academyId);
+    if (!targetAcademy) return;
+
+    if (isAuthenticated) {
+      if (userRole === 'admin') {
+        handleSelectAcademy(academyId);
+        return;
+      }
+      if (userRole === 'student') {
+        if (selectedAcademyId === academyId) {
+          handleSelectAcademy(academyId);
+        } else {
+          alert("Você só tem acesso à sua academia.");
+        }
+        return;
+      }
+      const currentUser = ParseService.getCurrentUser();
+      let currentUserEmail = currentUser?.get('email');
+      if (!currentUserEmail) {
+        const stored = localStorage.getItem('oss_custom_session');
+        if (stored) {
+          currentUserEmail = JSON.parse(stored).email;
+        }
+      }
+      if (targetAcademy.allowedEmails && targetAcademy.allowedEmails.length > 0) {
+        const normalizedAllowed = targetAcademy.allowedEmails.map(e => e.trim().toLowerCase());
+        const normalizedCurrent = currentUserEmail ? currentUserEmail.trim().toLowerCase() : '';
+        if (!normalizedCurrent || !normalizedAllowed.includes(normalizedCurrent)) {
+          if (confirm("Você não tem permissão para esta academia com o usuário atual. Deseja fazer login com outra conta?")) {
+            setLoginTargetAcademyId(academyId);
+            setIsLoginModalOpen(true);
+          }
+          return;
+        }
+      }
+      handleSelectAcademy(academyId);
+    } else {
+      setLoginTargetAcademyId(academyId);
+      setIsLoginModalOpen(true);
+    }
+  }, [data.academies, isAuthenticated, userRole, selectedAcademyId, handleSelectAcademy]);
 
   const handleUpdateStudentProgress = async (studentId: string, stars: number) => {
     if (userRole !== 'admin' && userRole !== 'professor') return;
@@ -873,9 +878,7 @@ const App = () => {
     }
   };
 
-  const handleOpenStudentProfile = (studentId: string) => {
-    setSelectedStudentId(studentId);
-  };
+
 
   const handleOpenNewTrainingModal = () => {
     setNewTraining({
@@ -889,16 +892,7 @@ const App = () => {
     setIsTrainingModalOpen(true);
   };
 
-  const handleEditTraining = (training: TrainingSession) => {
-    setNewTraining({ ...training, media: training.media || [] });
-    setCurrentTechniqueToAdd(JIU_JITSU_TECHNIQUES[0]);
-    setIsTrainingModalOpen(true);
-  };
 
-  const handleConfirmDeleteTraining = (trainingId: string) => {
-    setTrainingToDelete(trainingId);
-    setIsDeleteTrainingModalOpen(true);
-  };
 
   const handleDeleteTraining = async () => {
     if (!selectedAcademyId || !trainingToDelete) return;
@@ -944,7 +938,7 @@ const App = () => {
     }
   };
 
-  const handleOpenTransactionModal = () => {
+  const handleOpenTransactionModal = useCallback(() => {
     setNewTransaction({
       type: FinancialType.MONTHLY,
       amount: 150.00,
@@ -954,21 +948,7 @@ const App = () => {
     });
     setRecurrenceCount(1);
     setIsTransactionModalOpen(true);
-  };
-
-  const handleEditTransaction = (transaction: FinancialTransaction) => {
-    setNewTransaction({
-      id: transaction.id,
-      studentId: transaction.studentId,
-      type: transaction.type,
-      amount: transaction.amount,
-      dueDate: transaction.dueDate,
-      paidDate: transaction.paidDate,
-      description: transaction.description
-    });
-    setRecurrenceCount(1); // Reset default
-    setIsTransactionModalOpen(true);
-  };
+  }, []);
 
   const handleSaveTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1072,7 +1052,7 @@ const App = () => {
     }
   }, [refreshData, showNotification]);
 
-  const handleClearStudentFinancials = async (studentId: string) => {
+  const handleClearStudentFinancials = useCallback(async (studentId: string) => {
     if (!window.confirm("ATENÇÃO: Isso excluirá TODAS as transações financeiras deste aluno (histórico completo). Deseja continuar?")) return;
     try {
       await ParseService.deleteAllTransactionsForStudent(studentId);
@@ -1082,7 +1062,21 @@ const App = () => {
       console.error(e);
       alert("Erro ao limpar financeiro.");
     }
-  };
+  }, [refreshData, showNotification]);
+
+  const handleEditTransaction = useCallback((transaction: FinancialTransaction) => {
+    setNewTransaction({
+      id: transaction.id,
+      studentId: transaction.studentId,
+      type: transaction.type,
+      amount: transaction.amount,
+      dueDate: transaction.dueDate,
+      paidDate: transaction.paidDate,
+      description: transaction.description
+    });
+    setRecurrenceCount(1);
+    setIsTransactionModalOpen(true);
+  }, []);
 
   const handleGenerateAiAnalysis = async () => {
     if (!selectedAcademyId) return;
@@ -1418,72 +1412,16 @@ const App = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {data.academies.map(academy => {
-                const studentCount = data.students.filter(s => s.academyId === academy.id).length;
-                return (
-                  <div
-                    key={academy.id}
-                    onClick={() => handlePublicAcademyClick(academy.id)}
-                    className={`rounded-xl shadow-sm hover:shadow-xl border p-6 cursor-pointer transition-all duration-200 group relative overflow-hidden 
-                      ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}
-                    `}
-                  >
-                    <div className="flex justify-between items-start mb-4 relative z-10">
-                      <div className={`w-16 h-16 rounded-lg border flex items-center justify-center overflow-hidden group-hover:border-jiu-primary transition-colors
-                        ${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-50 border-gray-200'}
-                      `}>
-                        {academy.logo ? (
-                          <img src={academy.logo} alt={academy.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <IconAcademy className="w-8 h-8 text-gray-400" />
-                        )}
-                      </div>
-                      {isAuthenticated && (
-                        <span className={`text-xs font-semibold px-2 py-1 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-                          {studentCount} {studentCount === 1 ? 'Aluno' : 'Alunos'}
-                        </span>
-                      )}
-                    </div>
-                    <h3 className={`text-xl font-bold mb-1 relative z-10 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{academy.name}</h3>
-                    <p className={`text-sm mb-2 relative z-10 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{academy.address}</p>
-
-                    {/* Schedule on Card */}
-                    {academy.schedule && academy.schedule.length > 0 && (
-                      <div className={`text-xs mb-4 relative z-10 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        <p className="font-semibold mb-1 flex items-center"><IconClock className="w-3 h-3 mr-1" /> Horários:</p>
-                        {academy.schedule.map((s, idx) => (
-                          <div key={idx} className="flex justify-between max-w-[200px]">
-                            <span className="font-medium">{s.day.substring(0, 3)}:</span>
-                            <span>
-                              {s.timeRanges.map(r => `${r.openTime}-${r.closeTime}`).join(', ')}
-                            </span>
-                          </div>
-                        )).slice(0, 3)}
-                        {academy.schedule.length > 3 && <span className="italic opacity-70">...e mais</span>}
-                      </div>
-                    )}
-
-                    <div className={`flex items-center justify-between text-sm border-t pt-4 relative z-10 ${darkMode ? 'text-gray-300 border-gray-700' : 'text-gray-700 border-gray-100'}`}>
-                      <div>
-                        <span className="font-medium mr-1">Instrutor:</span>
-                        <span className="truncate max-w-[120px] inline-block align-bottom">{academy.instructorName}</span>
-                      </div>
-
-                      {isAuthenticated && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePublicAcademyClick(academy.id);
-                          }}
-                          className={`ml-2 px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all transform hover:scale-105 bg-jiu-primary text-white hover:bg-blue-800`}
-                        >
-                          Acessar
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              {data.academies.map(academy => (
+                <AcademyCard
+                  key={academy.id}
+                  academy={academy}
+                  studentCount={data.students.filter(s => s.academyId === academy.id).length}
+                  darkMode={darkMode}
+                  isAuthenticated={isAuthenticated}
+                  onClick={handlePublicAcademyClick}
+                />
+              ))}
             </div>
 
             {/* --- PUBLIC GALLERY CAROUSEL --- */}
@@ -1719,95 +1657,18 @@ const App = () => {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedAcademyStudents.map(student => {
-                        const style = BELT_STYLES[student.belt] || BELT_STYLES[BeltColor.WHITE];
-                        const absences = calculateAbsences(student, selectedAcademy.trainings || []);
-
-                        // Check financial status
-                        const studentFinancials = academyFinancials.filter(f => f.studentId === student.id);
-                        const hasOverdue = studentFinancials.some(f => isOverdue(f));
-
-                        return (
-                          <div key={student.id} onClick={() => handleOpenStudentProfile(student.id)} className="flex rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200 h-32 cursor-pointer group">
-                            {/* Left: Photo/Belt (30%) */}
-                            <div
-                              className="w-[30%] flex items-center justify-center p-3 relative"
-                              style={{
-                                background: style.background,
-                                color: style.color,
-                              }}
-                            >
-                              {student.photo ? (
-                                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-white shadow-md z-10 relative">
-                                  <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
-                                </div>
-                              ) : (
-                                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-black/10 flex items-center justify-center z-10 border-2 border-white/50">
-                                  <span className="text-3xl md:text-4xl font-bold opacity-50">{student.name.charAt(0)}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Middle: Info (60%) */}
-                            <div className="w-[60%] bg-neutral-900 text-white p-3 flex flex-col justify-between relative">
-                              <div>
-                                <div className="flex justify-between items-start">
-                                  <h4 className="font-bold text-base truncate group-hover:text-jiu-primary transition-colors pr-2" title={student.name}>{student.name}</h4>
-                                  <div className="flex space-x-1">
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleEditStudent(student); }}
-                                      className="text-gray-500 hover:text-white transition-colors p-1 rounded-full"
-                                      title="Editar Aluno"
-                                    >
-                                      <IconEdit className="w-3 h-3" />
-                                    </button>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleConfirmDeleteStudent(student.id); }}
-                                      className="text-gray-500 hover:text-red-500 transition-colors p-1 rounded-full"
-                                      title="Excluir Aluno"
-                                    >
-                                      <IconTrash className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </div>
-                                <p className="text-xs font-semibold mt-0.5" style={{ color: style.solid }}>{student.belt}</p>
-
-                                {/* Added Phone Number here in the card */}
-                                <p className="text-[10px] text-gray-400 truncate mt-0.5">{student.phone}</p>
-
-                                <div className="flex items-center gap-2 mt-1">
-                                  <p className="text-[10px] text-gray-400">Faltas: <span className="text-red-400 font-bold">{absences}</span></p>
-                                  {hasOverdue && (
-                                    <span className="text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded flex items-center">
-                                      <IconAlert className="w-3 h-3 mr-0.5" /> Financeiro
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div>
-                                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Desde</p>
-                                <p className="text-xs font-medium text-gray-300">
-                                  {new Date(student.startDate).toLocaleDateString('pt-BR')}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Right: Rank Bar (Black Bar for Stripes) (10%) */}
-                            <div className="w-[10%] bg-black border-l border-gray-800 flex flex-col-reverse items-center justify-evenly py-2" onClick={(e) => e.stopPropagation()}>
-                              {/* 4 Clickable Areas for Stripes */}
-                              {[1, 2, 3, 4].map(degree => (
-                                <div
-                                  key={degree}
-                                  onClick={() => handleUpdateStudentDegree(student.id, degree)}
-                                  className={`w-6 h-1.5 cursor-pointer transition-all duration-200 border border-white/30 ${student.degrees && student.degrees >= degree ? 'bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)]' : 'bg-transparent hover:bg-white/20'}`}
-                                  title={`Grau ${degree}`}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {selectedAcademyStudents.map(student => (
+                        <StudentCard
+                          key={student.id}
+                          student={student}
+                          absences={calculateAbsences(student, selectedAcademy.trainings || [])}
+                          hasOverdue={academyFinancials.filter(f => f.studentId === student.id).some(f => isOverdue(f))}
+                          onOpenProfile={handleOpenStudentProfile}
+                          onEdit={handleEditStudent}
+                          onDelete={handleConfirmDeleteStudent}
+                          onUpdateDegree={handleUpdateStudentDegree}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
@@ -2068,204 +1929,30 @@ const App = () => {
                   </button>
                 </div>
 
-                {/* STUDENT FINANCIAL CARDS GRID */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {studentFinancialCards.length === 0 ? (
                     <div className="col-span-full py-12 text-center text-gray-500 border-2 border-dashed rounded-xl dark:border-gray-700">
                       Nenhum aluno com histórico financeiro ou matrícula ativa.
                     </div>
                   ) : (
-                    studentFinancialCards.map((cardData) => {
-                      const { student, paidSum, overdueSum, pendingSum, nextPayment, monthlyAmount } = cardData;
-                      const beltStyle = BELT_STYLES[student.belt] || BELT_STYLES[BeltColor.WHITE];
-                      const isDefaulter = overdueSum > 0;
-
-                      return (
-                        <div key={student.id} className={`rounded-xl border shadow-sm overflow-hidden flex flex-col ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-200'}`}>
-                          {/* Card Header */}
-                          <div className="p-4 flex items-center space-x-3 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-sm flex-shrink-0" style={{ borderColor: beltStyle.solid }}>
-                              {student.photo ? (
-                                <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 font-bold">
-                                  {student.name.charAt(0)}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className={`font-bold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{student.name}</h4>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs px-2 py-0.5 rounded text-white font-medium" style={{ backgroundColor: beltStyle.solid }}>{student.belt}</span>
-                                {isDefaulter && (
-                                  <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase border border-red-200">Em Atraso</span>
-                                )}
-                              </div>
-                            </div>
-                            {/* Botão de Limpar Histórico do Aluno */}
-                            <button
-                              onClick={() => handleClearStudentFinancials(student.id)}
-                              className="p-2 bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 rounded-full transition-colors ml-2"
-                              title="Limpar TODO histórico financeiro"
-                            >
-                              <IconTrash className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                          {/* Card Body: Stats */}
-                          <div className="p-4 flex-1">
-                            <div className="mb-4">
-                              <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Mensalidade Estimada</p>
-                              <p className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                                {monthlyAmount > 0 ? `R$ ${monthlyAmount.toFixed(2)}` : 'Não definida'}
-                              </p>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-1 md:gap-2 text-center mb-4">
-                              <div className="bg-green-50 dark:bg-green-900/20 p-1.5 md:p-2 rounded-lg border border-green-100 dark:border-green-900/30 overflow-hidden">
-                                <p className="text-[9px] md:text-[10px] text-green-600 dark:text-green-400 font-bold uppercase truncate">Pago</p>
-                                <p className="text-xs md:text-sm font-bold text-green-700 dark:text-green-300 truncate">R${paidSum.toFixed(0)}</p>
-                              </div>
-                              <div className="bg-red-50 dark:bg-red-900/20 p-1.5 md:p-2 rounded-lg border border-red-100 dark:border-red-900/30 overflow-hidden">
-                                <p className="text-[9px] md:text-[10px] text-red-600 dark:text-red-400 font-bold uppercase truncate">Falta</p>
-                                <p className="text-xs md:text-sm font-bold text-red-700 dark:text-red-300 truncate">R${overdueSum.toFixed(0)}</p>
-                              </div>
-                              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-1.5 md:p-2 rounded-lg border border-yellow-100 dark:border-yellow-900/30 overflow-hidden">
-                                <p className="text-[9px] md:text-[10px] text-yellow-600 dark:text-yellow-400 font-bold uppercase truncate">Futuro</p>
-                                <p className="text-xs md:text-sm font-bold text-yellow-700 dark:text-yellow-300 truncate">R${pendingSum.toFixed(0)}</p>
-                              </div>
-                            </div>
-
-                            {/* Vencimentos / Pendências — TODOS exibidos com scroll */}
-                            <div className="space-y-2">
-                              <p className="text-xs text-gray-400 font-medium uppercase border-b border-gray-100 dark:border-gray-700 pb-1">Vencimentos / Pendências</p>
-                              <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
-                                {cardData.transactions.filter(t => !t.paidDate).length === 0 ? (
-                                  <p className="text-xs text-gray-500 italic py-2 text-center">Tudo em dia! 🎉</p>
-                                ) : (
-                                  cardData.transactions
-                                    .filter(t => !t.paidDate)
-                                    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-                                    .map(tx => {
-                                      const isLate = isOverdue(tx);
-                                      return (
-                                        <div key={tx.id} className={`flex justify-between items-center text-sm p-1.5 rounded transition-colors ${isLate ? 'bg-red-50 dark:bg-red-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                                          <div className="flex flex-col">
-                                            <span className={`text-xs font-bold flex items-center gap-1 ${isLate ? 'text-red-500' : (darkMode ? 'text-gray-300' : 'text-gray-700')}`}>
-                                              {isLate && <IconAlert className="w-3 h-3" />}
-                                              {new Date(tx.dueDate + 'T12:00:00').toLocaleDateString('pt-BR')}
-                                            </span>
-                                            <span className="text-[10px] text-gray-500 truncate max-w-[120px]">{tx.description || tx.type}</span>
-                                          </div>
-                                          <div className="flex items-center gap-1">
-                                            <span className={`font-mono text-xs mr-1 ${isLate ? 'text-red-600 font-bold' : 'text-gray-600 dark:text-gray-400'}`}>
-                                              R${tx.amount.toFixed(0)}
-                                            </span>
-                                            <button
-                                              onClick={() => handleMarkAsPaid(tx.id)}
-                                              className="text-green-500 hover:text-green-700 dark:hover:text-green-400 p-1 bg-green-50 dark:bg-green-900/30 rounded"
-                                              title="Confirmar pagamento"
-                                            >
-                                              <IconCheck className="w-3 h-3" />
-                                            </button>
-                                            <button
-                                              onClick={() => handleEditTransaction(tx)}
-                                              className="text-blue-400 hover:text-blue-600 p-1"
-                                              title="Editar"
-                                            >
-                                              <IconEdit className="w-3 h-3" />
-                                            </button>
-                                            <button
-                                              onClick={() => handleDeleteTransaction(tx.id)}
-                                              className="text-gray-400 hover:text-red-600 p-1"
-                                              title="Excluir"
-                                            >
-                                              <IconTrash className="w-3 h-3" />
-                                            </button>
-                                          </div>
-                                        </div>
-                                      );
-                                    })
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Histórico Pago — colapsável com datas de criação/alteração */}
-                            {cardData.transactions.filter(t => t.paidDate).length > 0 && (
-                              <details className="mt-3">
-                                <summary className="text-xs text-gray-400 font-medium uppercase cursor-pointer select-none hover:text-gray-600 transition-colors flex items-center gap-1">
-                                  <span>✅ Histórico Pago ({cardData.transactions.filter(t => t.paidDate).length})</span>
-                                </summary>
-                                <div className="mt-2 max-h-48 overflow-y-auto space-y-1.5 pr-1">
-                                  {cardData.transactions
-                                    .filter(t => t.paidDate)
-                                    .sort((a, b) => (b.paidDate || '').localeCompare(a.paidDate || ''))
-                                    .map(tx => {
-                                      const fmtDate = (iso?: string | null) =>
-                                        iso ? new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—';
-                                      const fmtDateTime = (iso?: string | null) =>
-                                        iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
-                                      return (
-                                        <div key={tx.id} className="flex flex-col p-2 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 gap-1">
-                                          {/* Linha principal */}
-                                          <div className="flex justify-between items-center">
-                                            <div className="flex flex-col">
-                                              <span className="text-xs font-bold text-green-700 dark:text-green-400">
-                                                ✓ Pago em {fmtDate(tx.paidDate ? tx.paidDate + 'T12:00:00' : null)}
-                                              </span>
-                                              <span className="text-[10px] text-gray-500 truncate max-w-[130px]">
-                                                {tx.description || tx.type} — Venc: {fmtDate(tx.dueDate + 'T12:00:00')}
-                                              </span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                              <span className="font-mono text-xs font-bold text-green-700 dark:text-green-400">R${tx.amount.toFixed(0)}</span>
-                                              <button
-                                                onClick={() => handleUndoPayment(tx.id)}
-                                                className="text-yellow-500 hover:text-yellow-700 p-1 bg-yellow-50 dark:bg-yellow-900/30 rounded text-sm"
-                                                title="Desfazer pagamento (voltar para pendente)"
-                                              >
-                                                ↩
-                                              </button>
-                                              <button
-                                                onClick={() => handleEditTransaction(tx)}
-                                                className="text-blue-400 hover:text-blue-600 p-1"
-                                                title="Editar"
-                                              >
-                                                <IconEdit className="w-3 h-3" />
-                                              </button>
-                                              <button
-                                                onClick={() => handleDeleteTransaction(tx.id)}
-                                                className="text-gray-400 hover:text-red-600 p-1"
-                                                title="Excluir"
-                                              >
-                                                <IconTrash className="w-3 h-3" />
-                                              </button>
-                                            </div>
-                                          </div>
-                                          {/* Linha de datas de auditoria */}
-                                          <div className="flex gap-3 text-[9px] text-gray-400 border-t border-green-100 dark:border-green-900/30 pt-1">
-                                            {tx.createdAt && (
-                                              <span title="Data de criação do lançamento">
-                                                🕐 Criado: {fmtDateTime(tx.createdAt)}
-                                              </span>
-                                            )}
-                                            {tx.updatedAt && tx.updatedAt !== tx.createdAt && (
-                                              <span title="Última alteração" className="text-orange-400">
-                                                ✏️ Alterado: {fmtDateTime(tx.updatedAt)}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      );
-                                    })
-                                  }
-                                </div>
-                              </details>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
+                    studentFinancialCards.map((cardData) => (
+                      <StudentFinancialCard
+                        key={cardData.student.id}
+                        student={cardData.student}
+                        paidSum={cardData.paidSum}
+                        overdueSum={cardData.overdueSum}
+                        pendingSum={cardData.pendingSum}
+                        monthlyAmount={cardData.monthlyAmount}
+                        transactions={cardData.transactions}
+                        darkMode={darkMode}
+                        isOverdue={isOverdue}
+                        onMarkAsPaid={handleMarkAsPaid}
+                        onUndoPayment={handleUndoPayment}
+                        onEdit={handleEditTransaction}
+                        onDelete={handleDeleteTransaction}
+                        onClear={handleClearStudentFinancials}
+                      />
+                    ))
                   )}
                 </div>
 
