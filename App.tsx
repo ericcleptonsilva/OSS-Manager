@@ -1016,25 +1016,42 @@ const App = () => {
   };
 
   const handleMarkAsPaid = async (transactionId: string) => {
+    const paidDate = new Date().toISOString().split('T')[0];
+    // Optimistic local update — sem buscar tudo do servidor novamente
+    setData(prev => ({
+      ...prev,
+      academies: prev.academies.map(ac => ({
+        ...ac,
+        financials: ac.financials.map(f =>
+          f.id === transactionId ? { ...f, paidDate } : f
+        )
+      }))
+    }));
     try {
-      await ParseService.saveTransaction({
-        id: transactionId,
-        paidDate: new Date().toISOString().split('T')[0]
-      });
-      await refreshData();
+      await ParseService.saveTransaction({ id: transactionId, paidDate });
       showNotification('Pagamento confirmado!');
     } catch (e) {
+      // Reverte em caso de erro
+      await refreshData();
       alert("Erro ao confirmar pagamento.");
     }
   };
 
   const handleDeleteTransaction = async (transactionId: string) => {
     if (!window.confirm("Tem certeza que deseja excluir esta cobrança?")) return;
+    // Optimistic local update
+    setData(prev => ({
+      ...prev,
+      academies: prev.academies.map(ac => ({
+        ...ac,
+        financials: ac.financials.filter(f => f.id !== transactionId)
+      }))
+    }));
     try {
       await ParseService.deleteObject('FinancialTransaction', transactionId);
-      await refreshData();
       showNotification('Cobrança excluída.');
     } catch (e) {
+      await refreshData();
       alert("Erro ao excluir cobrança.");
     }
   };
@@ -2072,36 +2089,35 @@ const App = () => {
                               </div>
                             </div>
 
-                            {/* Next Payment / Action Item */}
+                            {/* Vencimentos / Pendências — TODOS exibidos com scroll */}
                             <div className="space-y-2">
-                              <p className="text-xs text-gray-400 font-medium uppercase border-b border-gray-100 dark:border-gray-700 pb-1">Próximos Vencimentos / Pendências</p>
-                              <div className="max-h-32 overflow-y-auto space-y-2">
-                                {/* Filter only unpaid transactions for the quick list */}
+                              <p className="text-xs text-gray-400 font-medium uppercase border-b border-gray-100 dark:border-gray-700 pb-1">Vencimentos / Pendências</p>
+                              <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
                                 {cardData.transactions.filter(t => !t.paidDate).length === 0 ? (
                                   <p className="text-xs text-gray-500 italic py-2 text-center">Tudo em dia! 🎉</p>
                                 ) : (
                                   cardData.transactions
                                     .filter(t => !t.paidDate)
                                     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-                                    .slice(0, 3) // Show top 3 pending
                                     .map(tx => {
                                       const isLate = isOverdue(tx);
                                       return (
-                                        <div key={tx.id} className="flex justify-between items-center text-sm p-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                        <div key={tx.id} className={`flex justify-between items-center text-sm p-1.5 rounded transition-colors ${isLate ? 'bg-red-50 dark:bg-red-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                                           <div className="flex flex-col">
-                                            <span className={`text-xs font-bold ${isLate ? 'text-red-500' : (darkMode ? 'text-gray-300' : 'text-gray-700')}`}>
-                                              {new Date(tx.dueDate).toLocaleDateString('pt-BR')}
+                                            <span className={`text-xs font-bold flex items-center gap-1 ${isLate ? 'text-red-500' : (darkMode ? 'text-gray-300' : 'text-gray-700')}`}>
+                                              {isLate && <IconAlert className="w-3 h-3" />}
+                                              {new Date(tx.dueDate + 'T12:00:00').toLocaleDateString('pt-BR')}
                                             </span>
                                             <span className="text-[10px] text-gray-500 truncate max-w-[120px]">{tx.description || tx.type}</span>
                                           </div>
-                                          <div className="flex items-center gap-2">
-                                            <span className={`font-mono text-xs ${isLate ? 'text-red-600 font-bold' : 'text-gray-600 dark:text-gray-400'}`}>
+                                          <div className="flex items-center gap-1">
+                                            <span className={`font-mono text-xs mr-1 ${isLate ? 'text-red-600 font-bold' : 'text-gray-600 dark:text-gray-400'}`}>
                                               R${tx.amount.toFixed(0)}
                                             </span>
                                             <button
                                               onClick={() => handleMarkAsPaid(tx.id)}
                                               className="text-green-500 hover:text-green-700 dark:hover:text-green-400 p-1 bg-green-50 dark:bg-green-900/30 rounded"
-                                              title="Dar baixa (Pagar)"
+                                              title="Confirmar pagamento"
                                             >
                                               <IconCheck className="w-3 h-3" />
                                             </button>
@@ -2123,11 +2139,6 @@ const App = () => {
                                         </div>
                                       );
                                     })
-                                )}
-                                {cardData.transactions.filter(t => !t.paidDate).length > 3 && (
-                                  <p className="text-[10px] text-center text-gray-400 italic">
-                                    + {cardData.transactions.filter(t => !t.paidDate).length - 3} outros lançamentos
-                                  </p>
                                 )}
                               </div>
                             </div>

@@ -68,9 +68,15 @@ Para que os dados carregem corretamente, as CLPs das classes devem estar configu
 
 Acesse: **Back4App Dashboard → Database → [Classe] → Class Level Permissions**
 
+### Financeiro (2026-03-11)
+- **Lista completa de pendências**: Removido limite de 3 cobranças — agora exibe **todas** as mensalidades pendentes com scroll vertical.
+- **Destaque de atrasados**: Cobranças em atraso ganham fundo vermelho e ícone de alerta (⚠️) para facilitar identificação na tela.
+- **Performance ao marcar pago**: `handleMarkAsPaid` passou a usar *update otimista local* — a cobrança some da lista imediatamente sem recarregar todos os dados do servidor (elimina o re-render pesado da tela inteira).
+- **Performance ao excluir cobrança**: `handleDeleteTransaction` idem — remoção instantânea no estado local.
+- **Correção de data**: Bug de fuso horário corrigido na exibição das datas de vencimento (adicionado `T12:00:00` no parse).
+
 ---
 
-## 📝 Log de Alterações Recentes
 
 ### Administração e Segurança
 - **Correção de Credenciais**: O email `admin@oss.com` foi consolidado como o único acesso administrativo global. Removidas referências a emails de teste anteriores.
