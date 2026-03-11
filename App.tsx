@@ -2568,10 +2568,10 @@ const App = () => {
       >
         <form onSubmit={handleSaveTransaction} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Aluno</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Aluno</label>
             <select
               required
-              className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
+              className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
               value={newTransaction.studentId || ''}
               onChange={e => setNewTransaction({ ...newTransaction, studentId: e.target.value })}
             >
@@ -2584,9 +2584,9 @@ const App = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Tipo</label>
               <select
-                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
+                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
                 value={newTransaction.type}
                 onChange={e => setNewTransaction({ ...newTransaction, type: e.target.value as FinancialType })}
               >
@@ -2596,12 +2596,12 @@ const App = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$) - Por parcela</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Valor (R$) - Por parcela</label>
               <input
                 type="number"
                 step="0.01"
                 required
-                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
+                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900 placeholder-gray-500"
                 value={newTransaction.amount}
                 onChange={e => setNewTransaction({ ...newTransaction, amount: parseFloat(e.target.value) })}
               />
@@ -2610,11 +2610,11 @@ const App = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Vencimento (1ª Parcela)</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Vencimento (1ª Parcela)</label>
               <input
                 type="date"
                 required
-                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
+                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
                 value={newTransaction.dueDate}
                 onChange={e => setNewTransaction({ ...newTransaction, dueDate: e.target.value })}
               />
@@ -2622,13 +2622,13 @@ const App = () => {
             {/* Oculta opção de recorrência se estiver editando uma cobrança existente */}
             {!(newTransaction.id && !newTransaction.id.startsWith('fin-')) && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade de Meses</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Quantidade de Meses</label>
                 <input
                   type="number"
                   min="1"
                   max="120"
                   required
-                  className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
+                  className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
                   value={recurrenceCount}
                   onChange={e => setRecurrenceCount(parseInt(e.target.value))}
                 />
@@ -2637,21 +2637,21 @@ const App = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Pago em (Opcional - Quita todas)</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Pago em (Opcional - Quita todas)</label>
             <input
               type="date"
-              className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
+              className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
               value={newTransaction.paidDate || ''}
               onChange={e => setNewTransaction({ ...newTransaction, paidDate: e.target.value })}
             />
-            <p className="text-xs text-gray-500 mt-1">Deixe em branco se estiver pendente</p>
+            <p className="text-xs text-gray-600 mt-1">Deixe em branco se estiver pendente</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição (Opcional)</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Descrição (Opcional)</label>
             <input
               type="text"
-              className="w-full rounded-lg border-gray-300 border p-2.5 bg-white"
+              className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900 placeholder-gray-500"
               placeholder="Ex: Mensalidade 2023"
               value={newTransaction.description || ''}
               onChange={e => setNewTransaction({ ...newTransaction, description: e.target.value })}
@@ -2856,20 +2856,20 @@ const App = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Equipe</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Nome da Equipe</label>
             <input
               required
               type="text"
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white"
+              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
               value={newTeam.name || ''}
               onChange={e => setNewTeam({ ...newTeam, name: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição / Slogan</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Descrição / Slogan</label>
             <textarea
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white"
+              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
               rows={3}
               value={newTeam.description || ''}
               onChange={e => setNewTeam({ ...newTeam, description: e.target.value })}
@@ -3312,7 +3312,7 @@ const App = () => {
                 <input
                   type="text"
                   placeholder="Nome completo do pai, mãe ou tutor"
-                  className="w-full rounded border-yellow-300 border p-2 text-sm focus:ring-1 focus:ring-yellow-500 bg-white"
+                  className="w-full rounded border-yellow-300 border p-2 text-sm text-gray-900 placeholder-gray-500 focus:ring-1 focus:ring-yellow-500 bg-white"
                   value={newStudent.guardianName || ''}
                   onChange={e => setNewStudent({ ...newStudent, guardianName: e.target.value })}
                 />
@@ -3323,7 +3323,7 @@ const App = () => {
                   <input
                     type="tel"
                     placeholder="(00) 00000-0000"
-                    className="w-full rounded border-yellow-300 border p-2 text-sm focus:ring-1 focus:ring-yellow-500 bg-white"
+                    className="w-full rounded border-yellow-300 border p-2 text-sm text-gray-900 placeholder-gray-500 focus:ring-1 focus:ring-yellow-500 bg-white"
                     value={newStudent.guardianPhone || ''}
                     onChange={e => setNewStudent({ ...newStudent, guardianPhone: e.target.value })}
                   />
@@ -3333,7 +3333,7 @@ const App = () => {
                   <input
                     type="text"
                     placeholder="000.000.000-00"
-                    className="w-full rounded border-yellow-300 border p-2 text-sm focus:ring-1 focus:ring-yellow-500 bg-white"
+                    className="w-full rounded border-yellow-300 border p-2 text-sm text-gray-900 placeholder-gray-500 focus:ring-1 focus:ring-yellow-500 bg-white"
                     value={newStudent.guardianCpf || ''}
                     onChange={e => setNewStudent({ ...newStudent, guardianCpf: e.target.value })}
                   />
@@ -3657,11 +3657,11 @@ const App = () => {
 
             <form onSubmit={handleSaveProfessor} className="p-4 md:p-6 space-y-4 overflow-y-auto flex-1">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email do Professor *</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Email do Professor *</label>
                 <input
                   required
                   type="email"
-                  className="w-full rounded-lg border-gray-300 border p-2.5 bg-gray-50 focus:bg-white transition-colors"
+                  className="w-full rounded-lg border-gray-300 border p-2.5 text-gray-900 placeholder-gray-500 bg-gray-50 focus:bg-white transition-colors"
                   value={newProfessor.email || ''}
                   onChange={e => setNewProfessor({ ...newProfessor, email: e.target.value })}
                   disabled={newProfessor.email !== '' && data.academies.some(a => (a.allowedEmails || []).map(e => e.toLowerCase()).includes(newProfessor.email.toLowerCase()))}
@@ -3670,11 +3670,11 @@ const App = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Senha do Professor</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">Senha do Professor</label>
                 <input
                   type="text"
                   placeholder="Ex: prof123 (Em branco para manter a atual)"
-                  className="w-full rounded-lg border-gray-300 border p-2.5 bg-gray-50 focus:bg-white transition-colors"
+                  className="w-full rounded-lg border-gray-300 border p-2.5 text-gray-900 placeholder-gray-500 bg-gray-50 focus:bg-white transition-colors"
                   value={newProfessor.password || ''}
                   onChange={e => setNewProfessor({ ...newProfessor, password: e.target.value })}
                 />
