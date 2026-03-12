@@ -12,6 +12,7 @@ interface StudentFinancialCardProps {
   monthlyAmount: number;
   transactions: FinancialTransaction[];
   darkMode: boolean;
+  canEdit?: boolean;
   isOverdue: (tx: FinancialTransaction) => boolean;
   onMarkAsPaid: (id: string) => void;
   onUndoPayment: (id: string) => void;
@@ -28,6 +29,7 @@ const StudentFinancialCard = memo(({
   monthlyAmount,
   transactions,
   darkMode,
+  canEdit = false,
   isOverdue,
   onMarkAsPaid,
   onUndoPayment,
@@ -61,13 +63,15 @@ const StudentFinancialCard = memo(({
           </div>
         </div>
         {/* Botão de Limpar Histórico do Aluno */}
-        <button
-          onClick={() => onClear(student.id)}
-          className="p-2 bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 rounded-full transition-colors ml-2"
-          title="Limpar TODO histórico financeiro"
-        >
-          <IconTrash className="w-4 h-4" />
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => onClear(student.id)}
+            className="p-2 bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 rounded-full transition-colors ml-2"
+            title="Limpar TODO histórico financeiro"
+          >
+            <span className="w-4 h-4"><IconTrash className="w-full h-full" /></span>
+          </button>
+        )}
       </div>
 
       {/* Card Body: Stats */}
@@ -119,27 +123,31 @@ const StudentFinancialCard = memo(({
                         <span className={`font-mono text-xs mr-1 ${isLate ? 'text-red-600 font-bold' : 'text-gray-600 dark:text-gray-400'}`}>
                           R${tx.amount.toFixed(0)}
                         </span>
-                        <button
-                          onClick={() => onMarkAsPaid(tx.id)}
-                          className="text-green-500 hover:text-green-700 dark:hover:text-green-400 p-1 bg-green-50 dark:bg-green-900/30 rounded"
-                          title="Confirmar pagamento"
-                        >
-                          <IconCheck className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => onEdit(tx)}
-                          className="text-blue-400 hover:text-blue-600 p-1"
-                          title="Editar"
-                        >
-                          <IconEdit className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => onDelete(tx.id)}
-                          className="text-gray-400 hover:text-red-600 p-1"
-                          title="Excluir"
-                        >
-                          <IconTrash className="w-3 h-3" />
-                        </button>
+                        {canEdit && (
+                          <>
+                            <button
+                              onClick={() => onMarkAsPaid(tx.id)}
+                              className="text-green-500 hover:text-green-700 dark:hover:text-green-400 p-1 bg-green-50 dark:bg-green-900/30 rounded"
+                              title="Confirmar pagamento"
+                            >
+                              <IconCheck className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => onEdit(tx)}
+                              className="text-blue-400 hover:text-blue-600 p-1"
+                              title="Editar"
+                            >
+                              <IconEdit className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => onDelete(tx.id)}
+                              className="text-gray-400 hover:text-red-600 p-1"
+                              title="Excluir"
+                            >
+                              <IconTrash className="w-3 h-3" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -177,27 +185,31 @@ const StudentFinancialCard = memo(({
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="font-mono text-xs font-bold text-green-700 dark:text-green-400">R${tx.amount.toFixed(0)}</span>
-                          <button
-                            onClick={() => onUndoPayment(tx.id)}
-                            className="text-yellow-500 hover:text-yellow-700 p-1 bg-yellow-50 dark:bg-yellow-900/30 rounded text-sm"
-                            title="Desfazer pagamento (voltar para pendente)"
-                          >
-                            ↩
-                          </button>
-                          <button
-                            onClick={() => onEdit(tx)}
-                            className="text-blue-400 hover:text-blue-600 p-1"
-                            title="Editar"
-                          >
-                            <IconEdit className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => onDelete(tx.id)}
-                            className="text-gray-400 hover:text-red-600 p-1"
-                            title="Excluir"
-                          >
-                            <IconTrash className="w-3 h-3" />
-                          </button>
+                          {canEdit && (
+                            <>
+                              <button
+                                onClick={() => onUndoPayment(tx.id)}
+                                className="text-yellow-500 hover:text-yellow-700 p-1 bg-yellow-50 dark:bg-yellow-900/30 rounded text-sm"
+                                title="Desfazer pagamento (voltar para pendente)"
+                              >
+                                ↩
+                              </button>
+                              <button
+                                onClick={() => onEdit(tx)}
+                                className="text-blue-400 hover:text-blue-600 p-1"
+                                title="Editar"
+                              >
+                                <IconEdit className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => onDelete(tx.id)}
+                                className="text-gray-400 hover:text-red-600 p-1"
+                                title="Excluir"
+                              >
+                                <IconTrash className="w-3 h-3" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                       {/* Linha de datas de auditoria */}

@@ -8,6 +8,7 @@ interface StudentCardProps {
   student: Student;
   absences: number;
   hasOverdue: boolean;
+  canEdit?: boolean;
   onOpenProfile: (id: string) => void;
   onEdit: (student: Student) => void;
   onDelete: (id: string) => void;
@@ -18,6 +19,7 @@ const StudentCard = memo(({
   student,
   absences,
   hasOverdue,
+  canEdit = false,
   onOpenProfile,
   onEdit,
   onDelete,
@@ -51,22 +53,24 @@ const StudentCard = memo(({
         <div>
           <div className="flex justify-between items-start">
             <h4 className="font-bold text-base truncate group-hover:text-jiu-primary transition-colors pr-2" title={student.name}>{student.name}</h4>
-            <div className="flex space-x-1">
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit(student); }}
-                className="text-gray-500 hover:text-white transition-colors p-1 rounded-full"
-                title="Editar Aluno"
-              >
-                <IconEdit className="w-3 h-3" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete(student.id); }}
-                className="text-gray-500 hover:text-red-500 transition-colors p-1 rounded-full"
-                title="Excluir Aluno"
-              >
-                <IconTrash className="w-3 h-3" />
-              </button>
-            </div>
+            {canEdit && (
+              <div className="flex space-x-1">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEdit(student); }}
+                  className="text-gray-500 hover:text-white transition-colors p-1 rounded-full"
+                  title="Editar Aluno"
+                >
+                  <IconEdit className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(student.id); }}
+                  className="text-gray-500 hover:text-red-500 transition-colors p-1 rounded-full"
+                  title="Excluir Aluno"
+                >
+                  <IconTrash className="w-3 h-3" />
+                </button>
+              </div>
+            )}
           </div>
           <p className="text-xs font-semibold mt-0.5" style={{ color: style.solid }}>{student.belt}</p>
 
@@ -95,9 +99,9 @@ const StudentCard = memo(({
         {[1, 2, 3, 4].map(degree => (
           <div
             key={degree}
-            onClick={() => onUpdateDegree(student.id, degree)}
-            className={`w-6 h-1.5 cursor-pointer transition-all duration-200 border border-white/30 ${student.degrees && student.degrees >= degree ? 'bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)]' : 'bg-transparent hover:bg-white/20'}`}
-            title={`Grau ${degree}`}
+            onClick={() => canEdit && onUpdateDegree(student.id, degree)}
+            className={`w-6 h-1.5 transition-all duration-200 border border-white/30 ${student.degrees && student.degrees >= degree ? 'bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)]' : 'bg-transparent hover:bg-white/20'} ${canEdit ? 'cursor-pointer' : 'cursor-default'}`}
+            title={canEdit ? `Grau ${degree}` : ''}
           />
         ))}
       </div>

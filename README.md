@@ -92,6 +92,13 @@ Acesse: **Back4App Dashboard → Database → [Classe] → Class Level Permissio
 - **Ponto de Mérito**: Adicionados botões de `+0.5` e `-0.5` estrelas no perfil do aluno para permitir ajustes manuais de progresso pelo instrutor.
 - **Feedback Visual**: Barra de progresso agora reflete pontuações decimais com suavidade.
 
+### 🔐 Expansão de Permissões (Professor)
+- **Gestão de Alunos**: Usuários com papel `professor` agora podem graduar graus, editar e excluir alunos de sua academia.
+- **Gestão de Treinos**: Professores ganharam permissão total para registrar, editar e excluir treinos e aulas.
+- **Gestão Financeira**: Professores agora podem visualizar a situação financeira dos alunos, marcar pagamentos como concluídos, criar novas cobranças e editar/excluir transações.
+- **Segurança**: As funções críticas de backend (`App.tsx`) foram atualizadas com verificações de permissão `admin` ou `professor`.
+- **Restrições Mantidas**: Somente o `admin` global pode gerenciar a equipe (banner, nome, logo), criar novas academias ou gerenciar a lista global de professores.
+
 ---
 
 ## 📦 Tecnologias

@@ -643,6 +643,7 @@ const App = () => {
 
   const handleDeleteStudent = useCallback(async () => {
     if (!studentToDelete) return;
+    if (userRole !== 'admin' && userRole !== 'professor') return;
     try {
       await ParseService.deleteAllTransactionsForStudent(studentToDelete);
       await ParseService.deleteObject('Student', studentToDelete);
@@ -657,7 +658,7 @@ const App = () => {
   }, [studentToDelete, refreshData, showNotification]);
 
   const handleUpdateStudentDegree = useCallback(async (studentId: string, degree: number) => {
-    if (userRole !== 'admin') return;
+    if (userRole !== 'admin' && userRole !== 'professor') return;
     const student = data.students.find(s => s.id === studentId);
     if (!student) return;
 
@@ -896,6 +897,7 @@ const App = () => {
 
   const handleDeleteTraining = async () => {
     if (!selectedAcademyId || !trainingToDelete) return;
+    if (userRole !== 'admin' && userRole !== 'professor') return;
     try {
       await ParseService.deleteObject('TrainingSession', trainingToDelete);
       await refreshData();
@@ -1663,6 +1665,7 @@ const App = () => {
                           student={student}
                           absences={calculateAbsences(student, selectedAcademy.trainings || [])}
                           hasOverdue={academyFinancials.filter(f => f.studentId === student.id).some(f => isOverdue(f))}
+                          canEdit={userRole === 'admin' || userRole === 'professor'}
                           onOpenProfile={handleOpenStudentProfile}
                           onEdit={handleEditStudent}
                           onDelete={handleConfirmDeleteStudent}
@@ -1789,6 +1792,7 @@ const App = () => {
                         key={training.id}
                         training={training}
                         darkMode={darkMode}
+                        canEdit={userRole === 'admin' || userRole === 'professor'}
                         onEdit={handleEditTraining}
                         onDelete={handleConfirmDeleteTraining}
                       />
@@ -1872,6 +1876,7 @@ const App = () => {
                         monthlyAmount={cardData.monthlyAmount}
                         transactions={cardData.transactions}
                         darkMode={darkMode}
+                        canEdit={userRole === 'admin' || userRole === 'professor'}
                         isOverdue={isOverdue}
                         onMarkAsPaid={handleMarkAsPaid}
                         onUndoPayment={handleUndoPayment}

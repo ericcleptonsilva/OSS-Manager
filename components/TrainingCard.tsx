@@ -6,6 +6,7 @@ import { IconClock, IconUsers, IconEdit, IconTrash, IconCalendar } from './icons
 interface TrainingCardProps {
   training: TrainingSession;
   darkMode: boolean;
+  canEdit?: boolean;
   onEdit: (training: TrainingSession) => void;
   onDelete: (id: string) => void;
 }
@@ -13,6 +14,7 @@ interface TrainingCardProps {
 const TrainingCard = memo(({
   training,
   darkMode,
+  canEdit = false,
   onEdit,
   onDelete
 }: TrainingCardProps) => {
@@ -66,22 +68,24 @@ const TrainingCard = memo(({
           </div>
 
           {/* Actions for Training */}
-          <div className="flex space-x-1">
-            <button
-              onClick={() => onEdit(training)}
-              className={`p-2 rounded-full transition-colors ${coverMedia ? 'text-white hover:bg-white/20' : 'text-gray-400 hover:text-jiu-primary hover:bg-gray-100'}`}
-              title="Editar Treino"
-            >
-              <IconEdit className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => onDelete(training.id)}
-              className={`p-2 rounded-full transition-colors ${coverMedia ? 'text-white hover:bg-red-600/50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50'}`}
-              title="Excluir Treino"
-            >
-              <IconTrash className="w-4 h-4" />
-            </button>
-          </div>
+          {canEdit && (
+            <div className="flex space-x-1">
+              <button
+                onClick={() => onEdit(training)}
+                className={`p-2 rounded-full transition-colors ${coverMedia ? 'text-white hover:bg-white/20' : 'text-gray-400 hover:text-jiu-primary hover:bg-gray-100'}`}
+                title="Editar Treino"
+              >
+                <IconEdit className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => onDelete(training.id)}
+                className={`p-2 rounded-full transition-colors ${coverMedia ? 'text-white hover:bg-red-600/50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50'}`}
+                title="Excluir Treino"
+              >
+                <IconTrash className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {training.description && (
