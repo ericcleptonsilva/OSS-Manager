@@ -466,7 +466,9 @@ const App = () => {
     try {
       const savedTeam = await ParseService.saveTeam(newTeam);
 
-      // Sincronizar mudança de senha no objeto _User para o admin global
+      // As senhas agora são gerenciadas nativamente pelo Parse (_User).
+      // Não salvamos mais a versão em texto simples no objeto Team.
+      /* 
       if (newTeam.adminPassword) {
         const currentUser = ParseService.getCurrentUser();
         if (currentUser && currentUser.get('email') === newTeam.adminEmail) {
@@ -474,6 +476,7 @@ const App = () => {
           await currentUser.save();
         }
       }
+      */
 
       setData(prev => ({
         ...prev,
@@ -496,8 +499,9 @@ const App = () => {
 
     try {
       const normalizedEmail = newProfessor.email.trim().toLowerCase();
-      // Salva o professor como um objeto ProfessorAccount real.
-      await ParseService.saveProfessorAccount(normalizedEmail, newProfessor.name, newProfessor.password);
+      // Salva o professor como um objeto ProfessorAccount. 
+      // Nota: Para segurança máxima, deve-se criar um Parse.User real.
+      await ParseService.saveProfessorAccount(normalizedEmail, newProfessor.name, undefined); // Não salva senha em texto simples
 
       // Iterate over ALL academies to update allowedEmails
       for (const academy of data.academies) {
@@ -781,21 +785,21 @@ const App = () => {
       return;
     }
 
-    // Check credentials provided in modal
-    // 1. Check against Academy Allowed Emails + Password
+    // Verificação de permissão para migração
+    // Em um sistema seguro, não comparamos senhas em texto simples.
+    // A migração é permitida se:
+    // 1. O usuário é um ADMIN global.
+    // 2. O usuário é um PROFESSOR já autorizado na academia de destino.
     let isValid = false;
-    if (targetAcademy.allowedEmails && targetAcademy.adminPassword) {
-      const normalizedAllowed = targetAcademy.allowedEmails.map(e => e.trim().toLowerCase());
-      const normalizedInput = migrationAuthEmail.trim().toLowerCase();
 
-      if (normalizedAllowed.includes(normalizedInput) && targetAcademy.adminPassword === migrationAuthPassword) {
-        isValid = true;
-      }
-    }
-
-    // 2. Fallback: Check against Global Admin (if they happen to know it)
-    if (!isValid && data.team.adminEmail && data.team.adminPassword) {
-      if (data.team.adminEmail.toLowerCase() === migrationAuthEmail.trim().toLowerCase() && data.team.adminPassword === migrationAuthPassword) {
+    if (userRole === 'admin') {
+      isValid = true;
+    } else if (userRole === 'professor') {
+      const normalizedAllowed = (targetAcademy.allowedEmails || []).map(e => e.trim().toLowerCase());
+      const currentUser = ParseService.getCurrentUser();
+      const currentEmail = currentUser?.get('email')?.trim().toLowerCase() || loginEmail.trim().toLowerCase();
+      
+      if (normalizedAllowed.includes(currentEmail)) {
         isValid = true;
       }
     }
@@ -2449,22 +2453,7 @@ const App = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <IconLock className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="password"
-                required
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="••••••"
-                value={migrationAuthPassword}
-                onChange={(e) => setMigrationAuthPassword(e.target.value)}
-              />
-            </div>
-          </div>
+{/* Senha removida por segurança. A migração agora depende do papel do usuário logado. */}
 
           <div className="pt-2 flex gap-3">
             <button
@@ -2628,16 +2617,7 @@ const App = () => {
                 title="Email fixo do Administrador"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Senha do Admin</label>
-              <input
-                type="text"
-                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
-                placeholder="Definir senha de acesso"
-                value={newTeam.adminPassword || ''}
-                onChange={e => setNewTeam({ ...newTeam, adminPassword: e.target.value })}
-              />
-            </div>
+{/* Senha removida. Utilize o fluxo nativo do Parse para gerenciar senhas. */}
           </div>
 
           {/* Professor Management Section */}
@@ -2842,16 +2822,7 @@ const App = () => {
                 onChange={e => setNewAcademy({ ...newAcademy, allowedEmails: [e.target.value] })}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-              <input
-                type="text"
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary outline-none bg-white text-gray-900"
-                placeholder="Senha de acesso"
-                value={newAcademy.adminPassword || ''}
-                onChange={e => setNewAcademy({ ...newAcademy, adminPassword: e.target.value })}
-              />
-            </div>
+{/* Senha removida. Professors usam contas próprias. */}
           </div>
 
           <div>
@@ -3091,16 +3062,7 @@ const App = () => {
                 onChange={e => setNewStudent({ ...newStudent, email: e.target.value })}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Senha (Login)</label>
-              <input
-                type="text"
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
-                placeholder="Definir senha"
-                value={newStudent.password || ''}
-                onChange={e => setNewStudent({ ...newStudent, password: e.target.value })}
-              />
-            </div>
+{/* Senha removida para alunos. O acesso agora é via Parse.User nativo. */}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -3408,16 +3370,7 @@ const App = () => {
                 <p className="text-xs text-gray-500 mt-1">O email será usado para o login unificado do professor.</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">Senha do Professor</label>
-                <input
-                  type="text"
-                  placeholder="Ex: prof123 (Em branco para manter a atual)"
-                  className="w-full rounded-lg border-gray-300 border p-2.5 text-gray-900 placeholder-gray-500 bg-gray-50 focus:bg-white transition-colors"
-                  value={newProfessor.password || ''}
-                  onChange={e => setNewProfessor({ ...newProfessor, password: e.target.value })}
-                />
-              </div>
+{/* Senha removida no cadastro manual. Deve-se usar o fluxo de convite ou registro nativo. */}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Academias Vinculadas *</label>
