@@ -1,23 +1,17 @@
 # OSS Manager — Gestão de Jiu-Jitsu
 
-## Análise de Segurança (Março 2026)
+## 🔐 Segurança e Proteção de Dados (Março 2026)
 
-Foi realizada uma análise de segurança focada em prevenir injeção de código malicioso e proteção de dados.
+O sistema passou por uma reformulação completa de segurança para garantir a proteção dos dados dos alunos e academias.
 
-### Passos da Análise
-1. **Auditoria de Dependências**: Verificação de pacotes em `package.json`.
-2. **Revisão de Código do Servidor**: Verificação de `server.js`.
-3. **Análise de Serviços**: Revisão profunda de `services/parseService.ts` e `services/GeminiService.ts`.
-4. **Inspeção de UI**: Verificação de componentes React e `App.tsx` para riscos de XSS e validação de input.
+### Implementações Realizadas
+1.  **Autenticação Nativa**: Migração para o sistema nativo do *Parse.User*, garantindo que as senhas nunca transitem ou sejam armazenadas em texto simples.
+2.  **Eliminação de Plaintext Passwords**: Removidos todos os campos de senha dos objetos `Academy`, `Student` e `Team`.
+3.  **Controle de Acesso (RBAC)**: Implementada lógica de permissão baseada em cargos (*Roles* - Admin/Professor) no lado do servidor.
+4.  **Limpeza de UI**: Interface refatorada para remover campos inseguros de entrada de senha em modais administrativos.
+5.  **Proteção contra Injeção**: Uso exclusivo do Parse SDK que sanitiza automaticamente as queries ao banco de dados.
 
-### Principais Achados
-- **Crítico**: Armazenamento e comparação de senhas em texto simples.
-- **Crítico**: Credenciais de administrador hardcoded no código.
-- **Alto**: Exposição excessiva de dados sensíveis (over-fetching).
-- **Alto**: Controle de permissões baseado apenas no lado do cliente (frontend).
-
-### Recomendações
-As soluções para estes problemas foram detalhadas no [implementation_plan.md](file:///C:/Users/clept/.gemini/antigravity\brain\ba1bb63b-3e55-4936-9a55-6af55fe75f45\implementation_plan.md).
+Para detalhes técnicos, consulte o [walkthrough.md](file:///c:/Users/clept/.gemini/antigravity/brain/ba1bb63b-3e55-4936-9a55-6af55fe75f45/walkthrough.md).
 
 Sistema de gerenciamento para academias de jiu-jitsu com integração ao **Back4App** (Parse) e hospedagem no **Google Cloud Run**.
 

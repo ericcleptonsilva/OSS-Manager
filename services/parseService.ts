@@ -30,7 +30,7 @@ const mapAcademy = (obj: Parse.Object): Academy => ({
   logo: obj.get('logo'),
   schedule: obj.get('schedule') || [],
   allowedEmails: obj.get('allowedEmails') || [],
-  adminPassword: '', // Removido por segurança (plaintext)
+  // adminPassword: '', // Removido por segurança
   trainings: [],
   financials: []
 });
@@ -45,7 +45,7 @@ const mapPublicAcademy = (obj: Parse.Object): Academy => ({
   logo: obj.get('logo'),
   schedule: obj.get('schedule') || [],
   allowedEmails: [], // Hidden
-  adminPassword: '', // Hidden
+  // adminPassword: '', // Hidden
   trainings: [],
   financials: []
 });
@@ -62,7 +62,7 @@ const mapStudent = (obj: Parse.Object): Student => ({
   degrees: obj.get('degrees'),
   academyId: obj.get('academy') ? obj.get('academy').id : '',
   photo: obj.get('photo'),
-  password: '', // Removido por segurança
+  // password: '', // Removido por segurança
   progressStars: obj.get('progressStars') || 0,
   guardianName: obj.get('guardianName'),
   guardianPhone: obj.get('guardianPhone'),
@@ -164,7 +164,7 @@ export const fetchFullData = async (): Promise<AppData> => {
         logo: teamObj.get('logo'),
         banner: teamObj.get('banner'),
         adminEmail: '', // Escondido por segurança
-        adminPassword: '' // Escondido por segurança
+        // adminPassword: '' // Removido por segurança
       };
     } else {
       team = INITIAL_DATA.team; // Fallback
@@ -266,7 +266,7 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
         logo: teamObj.get('logo'),
         banner: teamObj.get('banner'),
         adminEmail: '', // Hidden in public
-        adminPassword: '' // Hidden in public
+        // adminPassword: '' // Removido por segurança
       };
     } else {
       team = INITIAL_DATA.team;
@@ -459,8 +459,7 @@ export const saveTeam = async (teamData: Partial<Team>) => {
     description: team.get('description'),
     logo: team.get('logo'),
     banner: team.get('banner'),
-    adminEmail: team.get('adminEmail'),
-    adminPassword: '' // Removido por segurança
+    adminEmail: team.get('adminEmail')
   };
 };
 export const performCustomLogin = async (email: string, pass: string): Promise<Parse.User> => {
