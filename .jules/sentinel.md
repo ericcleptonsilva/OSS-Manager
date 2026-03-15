@@ -1,0 +1,4 @@
+## 2024-05-18 - [Hardcoded Admin Backdoor Reintroduction]
+**Vulnerability:** A hardcoded admin backdoor (admin@oss.com / admin) was found in `services/parseService.ts` within the `performCustomLogin` method. This allowed full administrative access regardless of what credentials were in the database.
+**Learning:** This is a recurring pattern in this codebase where debug or "fallback" credentials get committed into production authentication paths. Even if requested by a user previously, these represent critical, unauthenticated backdoor access and must be eliminated.
+**Prevention:** Regularly audit the `performCustomLogin` authentication chain. Ensure fallback routines rely strictly on dynamically fetched or configured values (like querying the `Team` object), never hardcoded strings inside the auth flow. Add specific checks during code review for any manual string comparisons to 'admin' or fixed emails in `login`/`auth` functions.
