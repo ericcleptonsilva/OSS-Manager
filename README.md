@@ -11,6 +11,13 @@ O sistema passou por uma reformulação completa de segurança para garantir a p
 4.  **Limpeza de UI**: Interface refatorada para remover campos inseguros de entrada de senha em modais administrativos.
 5.  **Proteção contra Injeção**: Uso exclusivo do Parse SDK que sanitiza automaticamente as queries ao banco de dados.
 
+---
+
+## 👨‍🎓 Área do Aluno
+O aluno agora tem um portal transparente para sua vida na academia:
+- **Resumo Financeiro**: Visualização de débitos e próximos vencimentos.
+- **Histórico de Treino**: Diário de evolução completo (graus, estrelas e técnicas).
+
 Para detalhes técnicos, consulte o [walkthrough.md](file:///c:/Users/clept/.gemini/antigravity/brain/ba1bb63b-3e55-4936-9a55-6af55fe75f45/walkthrough.md).
 
 Sistema de gerenciamento para academias de jiu-jitsu com integração ao **Back4App** (Parse) e hospedagem no **Google Cloud Run**.

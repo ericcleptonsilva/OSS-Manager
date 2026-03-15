@@ -199,12 +199,14 @@ const App = () => {
 
   const checkUserRoleAndLoadData = async (email: string, explicitRole?: UserRole) => {
     setIsAuthenticated(true);
-
     const fetchedData = await ParseService.fetchFullData();
     setData(fetchedData);
 
-    // 1. Try to find if it is a student
-    const studentFound = fetchedData.students.find(s => s.email.toLowerCase() === email.toLowerCase());
+    // Normalize login email
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // 1. Check if it is a student (Matching by EMAIL)
+    const studentFound = fetchedData.students.find(s => s.email.toLowerCase() === normalizedEmail);
 
     if (studentFound && (!explicitRole || explicitRole === 'student')) {
       setUserRole('student');
@@ -291,8 +293,16 @@ const App = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoadingAuth(true);
-
     try {
+      // SECURITY CHECK: Does this student exist in our records?
+      // Fetch fresh data if needed, or check current data
+      const freshData = await ParseService.fetchFullData();
+      const studentExists = freshData.students.find(s => s.email.toLowerCase() === loginEmail.trim().toLowerCase());
+
+      if (!studentExists) {
+        throw new Error('Email não cadastrado. Entre em contato com seu professor para ser adicionado antes de criar uma conta.');
+      }
+
       const user = await ParseService.registerUser(registerName, loginEmail, loginPassword);
       showNotification('Conta criada com sucesso! Bem-vindo.');
 
@@ -306,8 +316,12 @@ const App = () => {
       setUserRole('student');
       setCurrentUserId(user.id);
 
-      const fetchedData = await ParseService.fetchFullData();
-      setData(fetchedData);
+      // Reload data to ensure mapping is correct
+      setData(freshData);
+
+      // Auto-select student profile
+      setSelectedAcademyId(studentExists.academyId);
+      setSelectedStudentId(studentExists.id);
 
       setIsLoginModalOpen(false);
       setIsRegisterMode(false);
