@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { INITIAL_DATA, BELT_STYLES, BELT_GROUPS, WEEKDAYS, JIU_JITSU_TECHNIQUES } from './constants';
 import { Academy, AppData, Student, BeltColor, Team, TrainingSession, TrainingMedia, AcademySchedule, TimeRange, FinancialTransaction, FinancialType } from './types';
-import { IconAcademy, IconUsers, IconPlus, IconSparkles, IconBack, IconClock, IconEdit, IconTrash, IconSettings, IconCamera, IconClipboard, IconHistory, IconCalendar, IconCheck, IconMoney, IconWallet, IconAlert, IconLogout, IconMail, IconLock, IconUser, IconUserPlus, IconShield, IconX } from './components/icons';
+import { IconAcademy, IconUsers, IconPlus, IconSparkles, IconBack, IconClock, IconEdit, IconTrash, IconSettings, IconCamera, IconClipboard, IconHistory, IconCalendar, IconCheck, IconMoney, IconWallet, IconAlert, IconLogout, IconMail, IconLock, IconUser, IconUserPlus, IconShield, IconX, IconCreditCard } from './components/icons';
 import StudentFinancialCard from './components/StudentFinancialCard';
 import StudentCard from './components/StudentCard';
 import TrainingCard from './components/TrainingCard';
@@ -1162,6 +1162,18 @@ const App = () => {
       : [],
     [selectedStudent, selectedAcademy]
   );
+  
+  const selectedStudentFinancials = useMemo(() => {
+    if (!selectedStudent || !selectedAcademy) return null;
+    const studentTxs = (selectedAcademy.financials || []).filter(t => t.studentId === selectedStudent.id);
+    const paidSum = studentTxs.filter(t => t.paidDate).reduce((acc, c) => acc + c.amount, 0);
+    const overdueSum = studentTxs.filter(t => isOverdue(t)).reduce((acc, c) => acc + c.amount, 0);
+    const pendingSum = studentTxs.filter(t => !t.paidDate && !isOverdue(t)).reduce((acc, c) => acc + c.amount, 0);
+    const pendingTxs = studentTxs.filter(t => !t.paidDate).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    const nextPayment = pendingTxs.length > 0 ? pendingTxs[0] : null;
+    const totalOwed = overdueSum + pendingSum;
+    return { paidSum, overdueSum, pendingSum, totalOwed, nextPayment };
+  }, [selectedStudent, selectedAcademy, isOverdue]);
 
   const academyFinancials = useMemo(
     () => selectedAcademy?.financials || [],
@@ -1957,6 +1969,52 @@ const App = () => {
                       <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedStudent.name}</h2>
                       <p className="text-gray-500 text-sm mt-1">Início: {new Date(selectedStudent.startDate).toLocaleDateString()}</p>
                     </div>
+
+                    {/* FINANCIAL SUMMARY CARD (For Student or Admins) */}
+                    {selectedStudentFinancials && (
+                      <div className={`mb-6 p-5 rounded-xl border shadow-sm ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}`}>
+                        <h4 className={`text-xs font-bold uppercase tracking-wider mb-4 flex items-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <IconCreditCard className="w-4 h-4 mr-2" />
+                          Resumo Financeiro
+                        </h4>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className={`p-3 rounded-lg ${selectedStudentFinancials.overdueSum > 0 
+                            ? (darkMode ? 'bg-red-900/20 border border-red-800/30' : 'bg-red-50 border border-red-100') 
+                            : (darkMode ? 'bg-green-900/10 border border-green-800/30' : 'bg-green-50 border border-green-100')}`}>
+                            <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Total em Aberto</p>
+                            <p className={`text-lg font-bold ${selectedStudentFinancials.overdueSum > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                              R$ {selectedStudentFinancials.totalOwed.toFixed(2)}
+                            </p>
+                            {selectedStudentFinancials.overdueSum > 0 && (
+                              <span className="text-[9px] font-bold text-red-500 flex items-center mt-1">
+                                <IconAlert className="w-2.5 h-2.5 mr-0.5" /> EM ATRASO
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+                            <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Próximo Vencimento</p>
+                            <p className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {selectedStudentFinancials.nextPayment 
+                                ? new Date(selectedStudentFinancials.nextPayment.dueDate + 'T12:00:00').toLocaleDateString('pt-BR') 
+                                : '-'}
+                            </p>
+                            <p className="text-[9px] text-gray-500 mt-1">
+                              {selectedStudentFinancials.nextPayment ? selectedStudentFinancials.nextPayment.type : 'Nenhuma pendência'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {selectedStudentFinancials.totalOwed > 0 && (
+                          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                             <p className="text-[10px] text-gray-400 italic text-center">
+                               Entre em contato com a secretaria para acertar suas mensalidades.
+                             </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* EVOLUTION / PROGRESS CARD */}
                     <div className={`mb-6 p-6 rounded-xl border border-yellow-200 ${darkMode ? 'bg-yellow-900/10 border-yellow-700/30' : 'bg-yellow-50'}`}>
