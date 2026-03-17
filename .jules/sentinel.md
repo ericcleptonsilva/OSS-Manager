@@ -1,0 +1,4 @@
+## 2024-05-24 - [Hardcoded Admin Backdoor]
+**Vulnerability:** Hardcoded admin credentials ('admin@oss.com' / 'admin') were left in the codebase in `services/parseService.ts` as a fallback login option, bypassing the database. They were also forced as a default fallback in `App.tsx` and present in `INITIAL_DATA`. This is a critical auth bypass vulnerability.
+**Learning:** Hardcoded backdoors for debugging or initialization purposes are frequently left behind in production code. A security check must look beyond config files and actively search authentication logic for explicitly mocked or hardcoded users.
+**Prevention:** Never commit explicit credentials or backdoor authentication branches. Setup initial admins through a secure script, one-time setup page, or directly in the database. Use automated code scanning tools to flag hardcoded passwords or emails in `auth` related functions.
