@@ -8,8 +8,8 @@ export const INITIAL_DATA: AppData = {
     name: 'OSS Manager',
     description: 'Gestão Inteligente para Academias de Jiu-Jitsu',
     logo: '',
-    adminEmail: 'admin@oss.com',
-    adminPassword: 'admin'
+    adminEmail: '',
+    adminPassword: ''
   },
   academies: [],
   students: []
