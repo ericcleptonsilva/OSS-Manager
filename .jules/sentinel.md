@@ -1,0 +1,4 @@
+## 2024-05-24 - [Hardcoded Admin Backdoor]
+**Vulnerability:** Hardcoded administrative backdoor credentials (`admin@oss.com` / `admin`) were discovered embedded within the custom login logic (`services/parseService.ts`), forcibly re-injected on profile edits (`App.tsx`), and set as default initial application state (`constants.ts`).
+**Learning:** This codebase previously relied on a known testing or fallback backdoor mechanism that bypassed standard Parse database authentication. This allowed unauthorized administrative access regardless of actual database state.
+**Prevention:** Remove all fallback credential blocks from authentication routines. Ensure initial database schemas and memory fallback data omit sensitive default secrets. Use secure initialization scripts, password reset mechanisms, or external environment variables for bootstrapping the first admin user, rather than hardcoding static fallback passwords in the client application bundle.
