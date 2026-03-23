@@ -1,0 +1,4 @@
+## 2024-05-24 - Hardcoded Global Admin Backdoor
+**Vulnerability:** A hardcoded global admin backdoor (`admin@oss.com` with password `admin`) was present in the authentication logic (`services/parseService.ts`), application initialization (`constants.ts`), and the UI state management (`App.tsx`).
+**Learning:** Hardcoded credentials are a common way developers bypass authentication during testing, but if left in the codebase, they provide a critical vulnerability that attackers can exploit to gain full administrative access. It's crucial to remove all such backdoors before deployment.
+**Prevention:** Implement secure authentication mechanisms, use environment variables for administrative access during initial setup if necessary, and strictly avoid hardcoding credentials or backdoor bypasses in application source code.
