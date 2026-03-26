@@ -448,13 +448,6 @@ const App = () => {
 
   const handleEditTeam = () => {
     const team = { ...data.team };
-    // Force specific requested admin email if empty or incorrect
-    if (!team.adminEmail || team.adminEmail.includes('weverton')) {
-      team.adminEmail = 'admin@oss.com';
-    }
-    if (!team.adminPassword) {
-      team.adminPassword = 'admin';
-    }
     setNewTeam(team);
     setIsTeamModalOpen(true);
   };
@@ -2622,10 +2615,10 @@ const App = () => {
               <input
                 type="email"
                 className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
-                placeholder="admin@oss.com"
+                placeholder="Email do Administrador"
                 value={newTeam.adminEmail || ''}
-                readOnly={true} // Protect global admin email
-                title="Email fixo do Administrador"
+                onChange={(e) => setNewTeam({ ...newTeam, adminEmail: e.target.value })}
+                title="Email do Administrador"
               />
             </div>
             <div>
