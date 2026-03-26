@@ -1,0 +1,4 @@
+## 2026-03-26 - [CRITICAL] Hardcoded Admin Backdoor Credentials Reintroduced
+**Vulnerability:** A hardcoded backdoor for `admin@oss.com` / `admin` was reintroduced into the authentication logic (`performCustomLogin` in `services/parseService.ts`). It also forced this email and password as fallbacks in `App.tsx` and was set as the default credential in `constants.ts`.
+**Learning:** This is a known vulnerability pattern in this codebase where hardcoded credentials bypass standard authentication checks and provide a mocked admin account, exposing the entire system to unauthorized access.
+**Prevention:** Always ensure backdoor credentials like 'admin@oss.com' and 'admin' are completely removed from authentication logic, fallback UI assignments, and default initial state. Authentication should rely solely on securely stored credentials and proper roles.
