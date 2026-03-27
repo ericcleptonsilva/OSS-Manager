@@ -1,0 +1,4 @@
+## 2024-05-24 - [CRITICAL] Hardcoded backdoor credentials removed
+**Vulnerability:** A hardcoded backdoor for `admin@oss.com` with password `admin` was present in `services/parseService.ts` allowing unauthorized administrative access. Additionally, this email was assigned by default in UI logic (`App.tsx`) and initial state (`constants.ts`).
+**Learning:** Hardcoded backdoors requested for testing or demonstration are severe security risks if merged and deployed. They bypass authentication and authorization checks and give full control over the application.
+**Prevention:** Never include hardcoded credentials in source code. All administrative accounts should be managed through standard authentication mechanisms (like Parse users) and initialized securely via environment variables or database seed scripts if absolutely necessary.
