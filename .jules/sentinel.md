@@ -1,0 +1,4 @@
+## 2024-05-28 - Hardcoded Backdoor Credentials
+**Vulnerability:** Found hardcoded global admin credentials (`admin@oss.com` / `admin`) in `services/parseService.ts` allowing authentication bypass, as well as defaults set in `constants.ts` and `App.tsx` which could reset access to the backdoor credentials.
+**Learning:** Hardcoded credentials are a common anti-pattern, often introduced during early development or debugging and forgotten. In this codebase, it was explicitly identified as a known vulnerability pattern to watch out for.
+**Prevention:** Always verify that no hardcoded fallback credentials are present in authentication mechanisms like `performCustomLogin`, and ensure default configuration states like `INITIAL_DATA` do not assign usable privileged accounts. Implement a secure initialization script or CLI tool for creating the first admin account instead of using hardcoded code fallbacks.
