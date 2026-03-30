@@ -1,0 +1,4 @@
+## 2024-05-24 - [Remove Hardcoded Admin Backdoor]
+**Vulnerability:** Hardcoded admin credentials (`admin@oss.com` and `admin`) were left in the codebase, granting unauthorized admin access to the application in `services/parseService.ts`, force-overriding team admin credentials in `App.tsx`, and being set as default in `constants.ts`.
+**Learning:** Hardcoded credentials are a critical security risk and should never be committed to source code or used as a fallback for authentication. The initial intent was likely for testing or mock purposes but was left in production code.
+**Prevention:** Never use hardcoded backdoor credentials. If default initialization data is needed, leave it blank, fetch from secure environments, or require setup upon initial deployment. Remove mock authentication fallbacks in the main application logic.
