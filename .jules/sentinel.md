@@ -1,0 +1,4 @@
+## 2024-10-24 - [CRITICAL] Hardcoded Admin Backdoor and Login Bypass
+**Vulnerability:** A hardcoded backdoor for `admin@oss.com` with password `admin` existed in the custom login handler (`services/parseService.ts`) and was also defaulted in `constants.ts`. Furthermore, the UI auto-filled these credentials if left blank (`App.tsx`), and there were no checks to prevent empty-string login bypass.
+**Learning:** Hardcoded credentials create an unpatchable vulnerability where anyone with source code access can bypass authentication. Relying on client-side logic to assign default passwords on empty fields exacerbates this.
+**Prevention:** Never commit fallback, backdoor, or testing credentials to the source code. Enforce strict input validation (e.g. `trim() !== ''`) directly in authentication endpoints/handlers to prevent bypass via falsy or empty inputs.

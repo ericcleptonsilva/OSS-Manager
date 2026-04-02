@@ -467,6 +467,10 @@ export const saveTeam = async (teamData: Partial<Team>) => {
   };
 };
 export const performCustomLogin = async (email: string, pass: string): Promise<Parse.User> => {
+  if (!email.trim() || !pass.trim()) {
+    throw new Parse.Error(101, "Email e senha são obrigatórios.");
+  }
+
   try {
     // 1. Try Standard Parse Login (_User class)
     try {
@@ -503,16 +507,6 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
     const teamQuery = new Parse.Query('Team');
     const team = await teamQuery.first();
     const normalizedInputEmail = email.trim().toLowerCase();
-
-    // Hardcoded fallback for admin@oss.com as requested by user
-    if (normalizedInputEmail === 'admin@oss.com' && pass === 'admin') {
-      const mockAdmin = new Parse.User();
-      mockAdmin.id = 'admin-user-hardcoded';
-      mockAdmin.set('email', 'admin@oss.com');
-      mockAdmin.set('username', 'Admin Global');
-      mockAdmin.set('role', 'admin');
-      return mockAdmin;
-    }
 
     if (team) {
       const teamEmail = team.get('adminEmail');
