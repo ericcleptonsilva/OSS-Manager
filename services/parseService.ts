@@ -504,20 +504,10 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
     const team = await teamQuery.first();
     const normalizedInputEmail = email.trim().toLowerCase();
 
-    // Hardcoded fallback for admin@oss.com as requested by user
-    if (normalizedInputEmail === 'admin@oss.com' && pass === 'admin') {
-      const mockAdmin = new Parse.User();
-      mockAdmin.id = 'admin-user-hardcoded';
-      mockAdmin.set('email', 'admin@oss.com');
-      mockAdmin.set('username', 'Admin Global');
-      mockAdmin.set('role', 'admin');
-      return mockAdmin;
-    }
-
     if (team) {
       const teamEmail = team.get('adminEmail');
       const teamPass = team.get('adminPassword');
-      if (teamEmail && teamPass && teamEmail.toLowerCase() === normalizedInputEmail && teamPass === pass) {
+      if (teamEmail && teamPass && teamEmail.trim() !== '' && teamPass.trim() !== '' && teamEmail.toLowerCase() === normalizedInputEmail && teamPass === pass) {
         const mockUser = new Parse.User();
         mockUser.id = 'admin-user';
         mockUser.set('email', teamEmail);
