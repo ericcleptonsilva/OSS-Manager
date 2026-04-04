@@ -11,6 +11,39 @@ O sistema passou por uma reformulação completa de segurança para garantir a p
 4.  **Limpeza de UI**: Interface refatorada para remover campos inseguros de entrada de senha em modais administrativos.
 5.  **Proteção contra Injeção**: Uso exclusivo do Parse SDK que sanitiza automaticamente as queries ao banco de dados.
 
+## 🛠️ Log de AlteraçõesRecentes (Abril 2024)
+
+### 1. Modernização UI/UX (Design Liquid Glass)
+- **Design System**: Implementação do sistema "Liquid Glass" (Glassmorphism 2.0) em todo o app.
+  - Uso intensivo de `backdrop-blur-xl`, `bg-white/10` e bordas translúcidas.
+  - Paleta de cores refinada com gradientes sutis e sombras profundas.
+- **Componentes Refatorados**:
+  - `Header` e `Banner`: Agora com animações de fade-in e escala.
+  - `AcademyCard`: Correção do tamanho do logo e layout premium.
+  - `StudentCard`: Nova estética com indicadores de faixa e status financeiro aprimorados.
+  - `StudentFinancialCard`: Refatoração completa com foco em legibilidade.
+  - `Modal`: Implementação de design de vidro consistente.
+
+### 2. Correções de Segurança e Autenticação (RBAC)
+- **Admin Override**: Implementada lógica de prioridade para garantir acesso administrativo aos e-mails `ericlobobr.01@gmail.com` e `admin@oss.com`, independente da role no banco de dados.
+- **Correção de Loop de Login**: Ajustada a função `checkUserRoleAndLoadData` para evitar que administradores fossem redirecionados incorretamente para o portal do aluno.
+- **Normalização de Dados**: Busca de faixas (belts) agora é insensível a maiúsculas/minúsculas, resolvendo falhas de exibição com dados legados.
+
+### 3. Infraestrutura e Preparação para Vercel
+- **Configuração Vercel**: Adicionado `vercel.json` para suporte a Single Page Application (SPA).
+- **Variáveis de Ambiente**: Padronização das chaves do Parse para compatibilidade com o dashboard da Vercel.
+- **Mapeamento de Professores**: Integração da entidade `ProfessorAccount` no fluxo de dados global.
+
+## 🚀 Guia de Host na Vercel
+
+1. Crie um projeto na Vercel importando este repositório.
+2. Adicione as seguintes Variáveis de Ambiente (Environment Variables):
+   - `VITE_PARSE_APP_ID`: Seu App ID do Back4App.
+   - `VITE_PARSE_JS_KEY`: Sua JavaScript Key do Back4App.
+   - `VITE_GEMINI_API_KEY`: (Opcional) Chave para recursos de IA.
+3. O build command deve ser `npm run build` e o output directory `dist`.
+4. Deploy!
+
 ---
 
 ## 👨‍🎓 Área do Aluno

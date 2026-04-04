@@ -23,45 +23,48 @@ const AcademyCard = memo(({
       onClick={() => onClick(academy.id)}
       className={`glass-card animate-in rounded-2xl p-6 cursor-pointer group relative overflow-hidden transition-all duration-300 hover:-translate-y-1`}
     >
-      <div className="flex justify-between items-start mb-5 relative z-10">
-        <div className={`w-18 h-18 rounded-2xl border-2 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-110 shadow-lg
-          ${darkMode ? 'bg-gray-800/50 border-gray-700/50 group-hover:border-jiu-primary' : 'bg-gray-50 border-gray-100 group-hover:border-jiu-primary'}
+      <div className="flex justify-between items-start mb-6 relative z-10">
+        <div className={`w-20 h-20 rounded-2xl border flex items-center justify-center overflow-hidden transition-all duration-700 group-hover:scale-105 group-hover:rotate-2 shadow-2xl backdrop-blur-xl relative
+          ${darkMode ? 'bg-white/5 border-white/10 shadow-black/40' : 'bg-white border-slate-100 shadow-slate-200/50'}
         `}>
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>
           {academy.logo ? (
-            <img src={academy.logo} alt={academy.name} className="w-full h-full object-cover" />
+            <img src={academy.logo} alt={academy.name} className="w-full h-full object-contain p-2 relative z-10" />
           ) : (
-            <IconAcademy className="w-10 h-10 text-gray-400 group-hover:text-jiu-primary transition-colors" />
+            <IconAcademy className="w-10 h-10 text-slate-400 group-hover:text-jiu-primary transition-colors relative z-10" />
           )}
         </div>
         {isAuthenticated && (
-          <span className={`text-xs font-bold px-3 py-1.5 rounded-full border shadow-sm backdrop-blur-md
-            ${darkMode ? 'bg-jiu-primary/20 text-jiu-primary border-jiu-primary/30' : 'bg-blue-50 text-jiu-primary border-blue-100'}
-          `}>
-            {studentCount} {studentCount === 1 ? 'Aluno' : 'Alunos'}
-          </span>
+          <div className="flex flex-col items-end gap-2">
+            <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-xl border backdrop-blur-2xl shadow-xl transition-all duration-300 group-hover:bg-jiu-primary group-hover:text-white group-hover:border-jiu-primary
+              ${darkMode ? 'bg-white/5 text-slate-400 border-white/10' : 'bg-white text-slate-500 border-slate-100'}
+            `}>
+              {studentCount} {studentCount === 1 ? 'Aluno' : 'Alunos'}
+            </span>
+          </div>
         )}
       </div>
       
-      <h3 className={`text-2xl font-bold mb-1 relative z-10 tracking-tight ${darkMode ? 'text-white' : 'text-gray-900 group-hover:text-jiu-primary transition-colors'}`}>{academy.name}</h3>
-      <p className={`text-sm mb-4 relative z-10 flex items-center opacity-80 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-        <span className="w-1.5 h-1.5 rounded-full bg-jiu-primary mr-2"></span>
+      <h3 className={`text-2xl font-black mb-1 relative z-10 tracking-tighter uppercase italic transition-all duration-300 group-hover:translate-x-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{academy.name}</h3>
+      <div className={`text-xs mb-6 relative z-10 flex items-center font-bold uppercase tracking-widest opacity-60 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+        <span className="w-2 h-2 rounded-full bg-jiu-primary mr-2 animate-pulse"></span>
         {academy.address}
-      </p>
+      </div>
 
       {/* Schedule on Card */}
       {academy.schedule && academy.schedule.length > 0 && (
-        <div className={`p-4 rounded-xl mb-5 relative z-10 backdrop-blur-sm shadow-inner
-          ${darkMode ? 'bg-black/20 text-gray-400' : 'bg-gray-50/50 text-gray-600'}
+        <div className={`p-5 rounded-2xl mb-6 relative z-10 backdrop-blur-xl shadow-inner border transition-all duration-300 group-hover:bg-jiu-primary/5
+          ${darkMode ? 'bg-white/5 border-white/5 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-600'}
         `}>
-          <p className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center opacity-70">
-            <IconClock className="w-3.5 h-3.5 mr-1.5" /> Próximos Treinos
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 flex items-center opacity-60">
+            <IconClock className="w-4 h-4 mr-2 text-jiu-primary" /> Próximos Treinos
           </p>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {academy.schedule.map((s, idx) => (
-              <div key={idx} className="flex justify-between items-center text-xs">
-                <span className="font-semibold">{s.day.split('-')[0]}:</span>
-                <span className="font-medium opacity-90">
-                  {s.timeRanges.map(r => `${r.openTime}`).join(', ')}
+              <div key={idx} className="flex justify-between items-center text-[11px]">
+                <span className="font-black uppercase tracking-wider">{s.day.split('-')[0]}</span>
+                <span className="font-bold opacity-80 bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
+                  {s.timeRanges.map(r => `${r.openTime}`).join(' • ')}
                 </span>
               </div>
             )).slice(0, 3)}
@@ -69,12 +72,15 @@ const AcademyCard = memo(({
         </div>
       )}
 
-      <div className={`flex items-center justify-between text-sm border-t pt-5 relative z-10 ${darkMode ? 'text-gray-400 border-white/5' : 'text-gray-600 border-gray-100'}`}>
-        <div className="flex items-center">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-jiu-primary to-blue-400 mr-2 flex items-center justify-center text-[10px] text-white font-bold">
+      <div className={`flex items-center justify-between border-t pt-6 relative z-10 ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
+        <div className="flex items-center group/instructor">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-jiu-primary to-blue-400 mr-3 flex items-center justify-center text-xs text-white font-black shadow-lg shadow-blue-500/20 transform transition-transform group-hover/instructor:scale-110">
             {academy.instructorName?.charAt(0)}
           </div>
-          <span className="truncate max-w-[120px] font-medium">{academy.instructorName}</span>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 leading-none mb-1">Mestre</span>
+            <span className="truncate max-w-[100px] text-xs font-bold tracking-tight leading-none">{academy.instructorName}</span>
+          </div>
         </div>
 
         {isAuthenticated && (
@@ -83,9 +89,10 @@ const AcademyCard = memo(({
               e.stopPropagation();
               onClick(academy.id);
             }}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all glass-card border-none bg-gradient-to-r from-jiu-primary to-blue-600 text-white shadow-lg hover:shadow-blue-500/20 hover:scale-105 active:scale-95"
+            className="group/btn relative overflow-hidden px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all bg-jiu-primary text-white shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
           >
-            Acessar
+            <span className="relative z-10">Acessar</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-transparent opacity-0 group-hover/btn:opacity-20 transition-opacity"></div>
           </button>
         )}
       </div>

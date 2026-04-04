@@ -27,27 +27,35 @@ const StudentCard = memo(({
   onDelete,
   onUpdateDegree
 }: StudentCardProps) => {
-  const style = BELT_STYLES[student.belt] || BELT_STYLES[BeltColor.WHITE];
+  // Normalizar a busca da faixa para ser insensível a maiúsculas/minúsculas
+  const beltKey = Object.keys(BELT_STYLES).find(
+    key => key.toLowerCase() === student.belt?.toLowerCase()
+  ) as BeltColor || BeltColor.WHITE;
+  
+  const style = BELT_STYLES[beltKey];
 
   return (
     <div onClick={() => onOpenProfile(student.id)} className="flex glass-card animate-in rounded-2xl overflow-hidden group h-32 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
       {/* Left: Photo/Belt (30%) */}
       <div
-        className="w-[32%] flex items-center justify-center p-3 relative overflow-hidden"
+        className="w-[32%] flex items-center justify-center p-4 relative overflow-hidden shrink-0"
         style={{
-          background: `linear-gradient(135deg, ${style.background}, ${style.solid}22)`,
+          background: `linear-gradient(135deg, ${style.background}, ${style.solid}11)`,
         }}
       >
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
         {student.photo ? (
-          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-white/80 shadow-2xl z-10 relative transition-transform duration-500 group-hover:scale-105">
+          <div className="w-20 w-20 md:w-22 md:h-22 rounded-2xl overflow-hidden border border-white/40 shadow-2xl z-10 relative transition-all duration-700 group-hover:scale-105 group-hover:-rotate-2">
             <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
           </div>
         ) : (
-          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center z-10 border-2 border-white/50 shadow-xl transition-transform duration-500 group-hover:scale-105">
-            <span className="text-3xl md:text-4xl font-black text-white drop-shadow-md">{student.name.charAt(0)}</span>
+          <div className="w-20 h-20 md:w-22 md:h-22 rounded-2xl bg-white/10 backdrop-blur-xl flex items-center justify-center z-10 border border-white/20 shadow-2xl transition-all duration-700 group-hover:scale-105 group-hover:rotate-3">
+            <span className="text-4xl font-black text-white drop-shadow-2xl italic tracking-tighter">{student.name.charAt(0)}</span>
           </div>
         )}
+        
+        {/* Belt Indicator Blur */}
+        <div className="absolute -bottom-4 -left-4 w-12 h-12 rounded-full blur-2xl opacity-40 animate-pulse" style={{ backgroundColor: style.solid }}></div>
       </div>
 
       {/* Middle: Info (58%) */}
@@ -67,31 +75,41 @@ const StudentCard = memo(({
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-0.5">
-            <p className="text-[10px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-md border" style={{ color: style.solid, borderColor: `${style.solid}44`, backgroundColor: `${style.solid}11` }}>{student.belt}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-lg border backdrop-blur-md shadow-sm transition-all" style={{ color: style.solid, borderColor: `${style.solid}33`, backgroundColor: `${style.solid}08` }}>
+              {student.belt}
+            </span>
             {hasOverdue && (
-              <span className="animate-pulse bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center shadow-lg shadow-red-500/20">
-                <IconAlert className="w-2.5 h-2.5 mr-0.5" /> DÉBITO
+              <span className="animate-pulse bg-red-500/10 text-red-500 border border-red-500/20 text-[8px] font-black px-2 py-0.5 rounded-lg flex items-center shadow-lg shadow-red-500/10 tracking-widest uppercase">
+                <IconAlert className="w-2.5 h-2.5 mr-1" /> DÉBITO
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-3 mt-2 opacity-70">
-            <p className="text-[10px] font-medium uppercase tracking-widest"><span className="opacity-50">Faltas:</span> <span className={absences > 3 ? "text-red-500 font-bold" : ""}>{absences}</span></p>
+          <div className="flex items-center gap-4 mt-3 opacity-60">
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black uppercase tracking-widest opacity-50">Faltas</span>
+              <span className={`text-xs font-bold ${absences > 3 ? "text-red-500" : ""}`}>{absences}</span>
+            </div>
+            <div className="w-px h-4 bg-gray-200 dark:bg-white/10"></div>
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black uppercase tracking-widest opacity-50">Status</span>
+              <span className="text-xs font-bold text-green-500">Ativo</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/5 pt-2">
-           <div>
-            <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest opacity-50">Ingresso</p>
-            <p className="text-[11px] font-bold opacity-80">
+        <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/5 pt-3">
+           <div className="flex flex-col">
+            <span className="text-[8px] text-gray-400 uppercase font-black tracking-widest opacity-40 leading-none mb-1">Ingresso</span>
+            <span className="text-[11px] font-black tracking-tighter opacity-80 leading-none">
               {new Date(student.startDate).toLocaleDateString('pt-BR')}
-            </p>
+            </span>
            </div>
            {canEdit && (
              <button
                 onClick={(e) => { e.stopPropagation(); onDelete(student.id); }}
-                className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                className="text-slate-300 hover:text-red-500 transition-all p-2 hover:bg-red-500/10 rounded-xl"
                 title="Excluir Aluno"
               >
                 <IconTrash className="w-3.5 h-3.5" />
