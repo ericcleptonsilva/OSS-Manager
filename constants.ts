@@ -11,7 +11,8 @@ export const INITIAL_DATA: AppData = {
     adminEmail: 'admin@oss.com'
   },
   academies: [],
-  students: []
+  students: [],
+  professors: []
 };
 
 export const BELT_STYLES: Record<BeltColor, { background: string; color: string; solid: string; borderColor?: string }> = {

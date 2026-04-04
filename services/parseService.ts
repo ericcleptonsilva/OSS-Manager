@@ -1,6 +1,6 @@
 
 import Parse from 'parse';
-import { AppData, Academy, Student, TrainingSession, FinancialTransaction, Team, BeltColor } from '../types';
+import { AppData, Academy, Student, TrainingSession, FinancialTransaction, Team, BeltColor, Professor } from '../types';
 import { INITIAL_DATA } from '../constants';
 
 // --- CONFIGURAÇÃO ---
@@ -67,6 +67,14 @@ const mapStudent = (obj: Parse.Object): Student => ({
   guardianName: obj.get('guardianName'),
   guardianPhone: obj.get('guardianPhone'),
   guardianCpf: obj.get('guardianCpf'),
+});
+
+// Converte objeto Parse para nossa interface Professor
+const mapProfessor = (obj: Parse.Object): Professor => ({
+  id: obj.id,
+  name: obj.get('name'),
+  email: obj.get('email'),
+  academyIds: obj.get('academyIds') || []
 });
 
 // --- ACTIONS ---
@@ -205,6 +213,11 @@ export const fetchFullData = async (): Promise<AppData> => {
     const financialQuery = new Parse.Query('FinancialTransaction');
     const financialObjs = await financialQuery.limit(1000).descending('dueDate').find();
 
+    // 4. Fetch Professors
+    const professorQuery = new Parse.Query('ProfessorAccount');
+    const professorObjs = await professorQuery.find();
+    const professors = professorObjs.map(mapProfessor);
+
     // Distribute data to academies
     academies.forEach(ac => {
       ac.trainings = trainingObjs
@@ -242,7 +255,8 @@ export const fetchFullData = async (): Promise<AppData> => {
     return {
       team,
       academies,
-      students
+      students,
+      professors
     };
 
   } catch (error) {
@@ -463,16 +477,15 @@ export const saveTeam = async (teamData: Partial<Team>) => {
   };
 };
 export const performCustomLogin = async (email: string, pass: string): Promise<Parse.User> => {
+  const normalizedEmail = email.trim().toLowerCase();
+
   try {
-    // 1. Tenta Login Padrão do Parse (Recomendado)
-    // Isso utiliza criptografia nativa e é a forma mais segura.
+    // 1. Tenta Login Padrão do Parse (Recomendado/Moderno)
     try {
-      const user = await Parse.User.logIn(email, pass);
+      const user = await Parse.User.logIn(normalizedEmail, pass);
       
-      // Determina o papel (role)
       let role = user.get('role') as string | undefined;
       if (!role) {
-        // Fallback: Se não houver role definida, tenta buscar via Parse.Role
         try {
           const roleQuery = new Parse.Query(Parse.Role);
           roleQuery.equalTo('users', user);
@@ -491,8 +504,46 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       user.set('role', role || 'student');
       return user;
     } catch (e: any) {
-      // Se falhar o login padrão, lançamos o erro. 
-      // Não permitimos mais logins via comparação de texto simples de senhas por segurança.
+      // Se falhou o login nativo, tentamos as credenciais "virtuais" legado (Team/Academy)
+      console.log('[Auth] Usuário nativo não encontrado, tentando credenciais legadas...');
+
+      // 2. Verifica se é Admin de Equipe (Global)
+      const teamQuery = new Parse.Query('Team');
+      const team = await teamQuery.first();
+      // Admin padrão consolidated: admin@oss.com / admin
+      if (team) {
+        const storedAdminEmail = (team.get('adminEmail') || 'admin@oss.com').trim().toLowerCase();
+        const storedAdminPass = team.get('adminPassword') || 'admin';
+        
+        if (normalizedEmail === storedAdminEmail && pass === storedAdminPass) {
+          const mockAdmin = new Parse.User();
+          mockAdmin.id = 'legacy-admin';
+          mockAdmin.set('email', normalizedEmail);
+          mockAdmin.set('name', 'Team Admin');
+          mockAdmin.set('role', 'admin');
+          return mockAdmin;
+        }
+      }
+
+      // 3. Verifica se é Professor de Academia (Específico)
+      const academyQuery = new Parse.Query('Academy');
+      // No Parse, equalTo em array verifica se o valor está PRESENTE no array
+      academyQuery.equalTo('allowedEmails', normalizedEmail);
+      const academy = await academyQuery.first();
+      
+      if (academy) {
+        const storedProfPass = academy.get('adminPassword');
+        if (storedProfPass === pass) {
+          const mockProf = new Parse.User();
+          mockProf.id = 'legacy-prof-' + academy.id;
+          mockProf.set('email', normalizedEmail);
+          mockProf.set('name', academy.get('instructorName') || 'Professor');
+          mockProf.set('role', 'professor');
+          return mockProf;
+        }
+      }
+
+      // Se nada acima funcionou, relança o erro original
       throw e;
     }
   } catch (error) {

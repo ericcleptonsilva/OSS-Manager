@@ -114,8 +114,16 @@ export interface Team {
   // adminPassword?: string; // Removido por segurança (Uso nativo do Parse.User)
 }
 
+export interface Professor {
+  id: string;
+  name: string;
+  email: string;
+  academyIds?: string[]; // IDs das academias que gerencia
+}
+
 export interface AppData {
   team: Team;
   academies: Academy[];
   students: Student[];
+  professors: Professor[];
 }

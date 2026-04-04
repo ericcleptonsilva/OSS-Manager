@@ -104,6 +104,7 @@ Acesse: **Back4App Dashboard → Database → [Classe] → Class Level Permissio
 - **Botão Novo Professor**: Implementado atalho direto para cadastrar novos instrutores vinculados a unidades.
 
 ### Interface (UI/UX)
+- **Correção de Ícone**: Corrigido o tamanho do ícone de lixeira (Limpar Histórico) no `StudentFinancialCard`, que estava distorcido e excessivamente grande na versão mobile/desktop, por herdar larguras `auto` e classes `full` dentro de uma tag em-linha. Foi definida a limitação de dimensões via Tailwind CSS `w-5 h-5` direto no SVG.
 - **Barra de Abas (Tabs)**: Substituída a rolagem horizontal por um layout em grade (`grid-cols-3`) para melhor navegação em dispositivos móveis e desktop.
 - **Botões Compactos**: Redimensionados os botões "Nova Academia" e "Matricular Aluno" para uma estética mais premium e equilibrada.
 - **Dark Mode**: Ajustes de contraste e cores para melhor legibilidade no tema escuro.

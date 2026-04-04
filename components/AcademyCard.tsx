@@ -21,49 +21,60 @@ const AcademyCard = memo(({
   return (
     <div
       onClick={() => onClick(academy.id)}
-      className={`rounded-xl shadow-sm hover:shadow-xl border p-6 cursor-pointer transition-all duration-200 group relative overflow-hidden 
-        ${darkMode ? 'bg-jiu-surface border-gray-700' : 'bg-white border-gray-100'}
-      `}
+      className={`glass-card animate-in rounded-2xl p-6 cursor-pointer group relative overflow-hidden transition-all duration-300 hover:-translate-y-1`}
     >
-      <div className="flex justify-between items-start mb-4 relative z-10">
-        <div className={`w-16 h-16 rounded-lg border flex items-center justify-center overflow-hidden group-hover:border-jiu-primary transition-colors
-          ${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-50 border-gray-200'}
+      <div className="flex justify-between items-start mb-5 relative z-10">
+        <div className={`w-18 h-18 rounded-2xl border-2 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-110 shadow-lg
+          ${darkMode ? 'bg-gray-800/50 border-gray-700/50 group-hover:border-jiu-primary' : 'bg-gray-50 border-gray-100 group-hover:border-jiu-primary'}
         `}>
           {academy.logo ? (
             <img src={academy.logo} alt={academy.name} className="w-full h-full object-cover" />
           ) : (
-            <IconAcademy className="w-8 h-8 text-gray-400" />
+            <IconAcademy className="w-10 h-10 text-gray-400 group-hover:text-jiu-primary transition-colors" />
           )}
         </div>
         {isAuthenticated && (
-          <span className={`text-xs font-semibold px-2 py-1 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+          <span className={`text-xs font-bold px-3 py-1.5 rounded-full border shadow-sm backdrop-blur-md
+            ${darkMode ? 'bg-jiu-primary/20 text-jiu-primary border-jiu-primary/30' : 'bg-blue-50 text-jiu-primary border-blue-100'}
+          `}>
             {studentCount} {studentCount === 1 ? 'Aluno' : 'Alunos'}
           </span>
         )}
       </div>
-      <h3 className={`text-xl font-bold mb-1 relative z-10 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{academy.name}</h3>
-      <p className={`text-sm mb-2 relative z-10 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{academy.address}</p>
+      
+      <h3 className={`text-2xl font-bold mb-1 relative z-10 tracking-tight ${darkMode ? 'text-white' : 'text-gray-900 group-hover:text-jiu-primary transition-colors'}`}>{academy.name}</h3>
+      <p className={`text-sm mb-4 relative z-10 flex items-center opacity-80 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+        <span className="w-1.5 h-1.5 rounded-full bg-jiu-primary mr-2"></span>
+        {academy.address}
+      </p>
 
       {/* Schedule on Card */}
       {academy.schedule && academy.schedule.length > 0 && (
-        <div className={`text-xs mb-4 relative z-10 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          <p className="font-semibold mb-1 flex items-center"><IconClock className="w-3 h-3 mr-1" /> Horários:</p>
-          {academy.schedule.map((s, idx) => (
-            <div key={idx} className="flex justify-between max-w-[200px]">
-              <span className="font-medium">{s.day.substring(0, 3)}:</span>
-              <span>
-                {s.timeRanges.map(r => `${r.openTime}-${r.closeTime}`).join(', ')}
-              </span>
-            </div>
-          )).slice(0, 3)}
-          {academy.schedule.length > 3 && <span className="italic opacity-70">...e mais</span>}
+        <div className={`p-4 rounded-xl mb-5 relative z-10 backdrop-blur-sm shadow-inner
+          ${darkMode ? 'bg-black/20 text-gray-400' : 'bg-gray-50/50 text-gray-600'}
+        `}>
+          <p className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center opacity-70">
+            <IconClock className="w-3.5 h-3.5 mr-1.5" /> Próximos Treinos
+          </p>
+          <div className="space-y-1.5">
+            {academy.schedule.map((s, idx) => (
+              <div key={idx} className="flex justify-between items-center text-xs">
+                <span className="font-semibold">{s.day.split('-')[0]}:</span>
+                <span className="font-medium opacity-90">
+                  {s.timeRanges.map(r => `${r.openTime}`).join(', ')}
+                </span>
+              </div>
+            )).slice(0, 3)}
+          </div>
         </div>
       )}
 
-      <div className={`flex items-center justify-between text-sm border-t pt-4 relative z-10 ${darkMode ? 'text-gray-300 border-gray-700' : 'text-gray-700 border-gray-100'}`}>
-        <div>
-          <span className="font-medium mr-1">Instrutor:</span>
-          <span className="truncate max-w-[120px] inline-block align-bottom">{academy.instructorName}</span>
+      <div className={`flex items-center justify-between text-sm border-t pt-5 relative z-10 ${darkMode ? 'text-gray-400 border-white/5' : 'text-gray-600 border-gray-100'}`}>
+        <div className="flex items-center">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-jiu-primary to-blue-400 mr-2 flex items-center justify-center text-[10px] text-white font-bold">
+            {academy.instructorName?.charAt(0)}
+          </div>
+          <span className="truncate max-w-[120px] font-medium">{academy.instructorName}</span>
         </div>
 
         {isAuthenticated && (
@@ -72,7 +83,7 @@ const AcademyCard = memo(({
               e.stopPropagation();
               onClick(academy.id);
             }}
-            className={`ml-2 px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all transform hover:scale-105 bg-jiu-primary text-white hover:bg-blue-800`}
+            className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all glass-card border-none bg-gradient-to-r from-jiu-primary to-blue-600 text-white shadow-lg hover:shadow-blue-500/20 hover:scale-105 active:scale-95"
           >
             Acessar
           </button>

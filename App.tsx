@@ -202,36 +202,40 @@ const App = () => {
     const fetchedData = await ParseService.fetchFullData();
     setData(fetchedData);
 
-    // Normalize login email
     const normalizedEmail = email.trim().toLowerCase();
+    
+    // OVERRIDE: Emails de Administrador Conhecidos
+    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || normalizedEmail === 'admin@oss.com';
 
-    // 1. Check if it is a student (Matching by EMAIL)
-    const studentFound = fetchedData.students.find(s => s.email.toLowerCase() === normalizedEmail);
-
-    if (studentFound && (!explicitRole || explicitRole === 'student')) {
-      setUserRole('student');
-      setCurrentUserId(studentFound.id);
-      setSelectedAcademyId(studentFound.academyId);
-      setSelectedStudentId(studentFound.id);
-      showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
-    } else {
-      // 2. Not a student, check explicit role
-      if (explicitRole) {
-        setUserRole(explicitRole);
-      } else {
-        // Fallback default
-        setUserRole('admin');
-      }
+    if (isAdminEmail || explicitRole === 'admin') {
+      setUserRole('admin');
       setCurrentUserId(null);
+      showNotification(`Bem-vindo, Admin!`);
+    } else {
+      // 1. Verifique se é um aluno (Correspondência por E-MAIL)
+      const studentFound = fetchedData.students.find(s => s.email.toLowerCase() === normalizedEmail);
 
+      // Se for um professor logando (explicitRole vindo do login do professor)
       if (explicitRole === 'professor') {
+        setUserRole('professor');
+        setCurrentUserId(null);
         showNotification(`Bem-vindo, Professor!`);
+      } else if (studentFound) {
+        setUserRole('student');
+        setCurrentUserId(studentFound.id);
+        setSelectedAcademyId(studentFound.academyId);
+        setSelectedStudentId(studentFound.id);
+        showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
       } else {
-        showNotification(`Bem-vindo, Admin!`);
+        // Fallback para admin caso não seja nada acima (Segurança)
+        setUserRole('admin');
+        setCurrentUserId(null);
+        showNotification(`Bem-vindo!`);
       }
     }
     return fetchedData;
   };
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1314,15 +1318,24 @@ const App = () => {
     <div className={`min-h-screen font-sans pb-20 transition-colors duration-300 ${darkMode ? 'bg-jiu-dark text-gray-100' : 'bg-gray-50 text-gray-800'}`}>
 
       {/* Header */}
-      <header className="bg-jiu-secondary text-white shadow-lg sticky top-0 z-40 border-b border-gray-800">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => {
-            if (userRole === 'admin') {
-              setSelectedStudentId(null);
-              handleBackToAcademies();
-            }
-          }}>
-            <div className="w-12 h-12 bg-white rounded-full overflow-hidden flex items-center justify-center text-jiu-secondary font-bold text-xl border-2 border-gray-200">
+      <header className={`sticky top-0 z-40 transition-all duration-300 border-b shadow-sm ${
+        darkMode 
+          ? 'bg-slate-900/80 backdrop-blur-xl border-white/10 text-white' 
+          : 'bg-white/80 backdrop-blur-xl border-slate-200/50 text-slate-900'
+      }`}>
+        <div className="container mx-auto px-4 py-3 md:py-4 flex justify-between items-center">
+          <div 
+            className="flex items-center space-x-3 cursor-pointer group" 
+            onClick={() => {
+              if (userRole === 'admin') {
+                setSelectedStudentId(null);
+                handleBackToAcademies();
+              }
+            }}
+          >
+            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl overflow-hidden flex items-center justify-center font-bold text-xl border transition-all duration-500 group-hover:scale-105 group-hover:shadow-lg ${
+              darkMode ? 'bg-white text-slate-900 border-white/20' : 'bg-slate-900 text-white border-slate-900/10'
+            }`}>
               {data.team.logo ? (
                 <img src={data.team.logo} alt="Team Logo" className="w-full h-full object-cover" />
               ) : (
@@ -1330,118 +1343,154 @@ const App = () => {
               )}
             </div>
             <div>
-              <h1 className="text-xl font-bold leading-tight">{data.team.name}</h1>
-              <p className="text-xs text-gray-400">
+              <h1 className="text-lg md:text-xl font-black leading-tight tracking-tight uppercase italic flex items-center">
+                {data.team.name}
+                <span className="ml-2 w-1 h-1 rounded-full bg-jiu-primary animate-pulse"></span>
+              </h1>
+              <p className={`text-[10px] font-bold uppercase tracking-widest opacity-60`}>
                 {userRole === 'student' ? 'Portal do Aluno' : 'Sistema de Gestão'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 md:gap-4">
             {!isAuthenticated ? (
               <button
                 onClick={() => setIsLoginModalOpen(true)}
-                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors border border-white/20"
+                className="bg-jiu-primary hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95"
               >
-                Área Restrita (Login)
+                Área Restrita
               </button>
             ) : (
               <>
-                {/* Show Settings only for Admin */}
-                {!selectedAcademyId && isAuthenticated && userRole === 'admin' && (
+                {/* Admin Navigation */}
+                {!selectedAcademyId && userRole === 'admin' && (
                   <button
                     onClick={handleEditTeam}
-                    className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+                    className={`p-2 rounded-xl transition-all duration-200 ${
+                      darkMode ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-900'
+                    }`}
                     title="Configurações da Equipe"
                   >
-                    <IconSettings className="w-6 h-6" />
+                    <IconSettings className="w-5 h-5 md:w-6 md:h-6" />
                   </button>
                 )}
 
-                {/* Admin/Professor Navigation */}
-                {selectedAcademyId && !selectedStudentId && (userRole === 'admin' || userRole === 'professor') && (
+                {/* Back Navigation (Mobile) */}
+                {(selectedAcademyId || selectedStudentId) && (userRole === 'admin' || userRole === 'professor') && (
                   <button
-                    onClick={handleBackToAcademies}
-                    className="md:hidden text-gray-300 hover:text-white"
+                    onClick={selectedStudentId ? () => setSelectedStudentId(null) : handleBackToAcademies}
+                    className={`md:hidden p-2 rounded-xl transition-all duration-200 ${
+                      darkMode ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-900'
+                    }`}
                   >
-                    <IconBack className="w-6 h-6" />
+                    <IconBack className="w-5 h-5" />
                   </button>
                 )}
 
-                {/* Admin/Professor Student Detail Navigation */}
-                {selectedStudentId && (userRole === 'admin' || userRole === 'professor') && (
+                <div className={`h-6 w-px mx-1 hidden md:block ${darkMode ? 'bg-white/10' : 'bg-slate-200'}`}></div>
+
+                {/* Theme Toggle & Logout */}
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setSelectedStudentId(null)}
-                    className="md:hidden text-gray-300 hover:text-white"
+                    onClick={toggleDarkMode}
+                    className={`p-2 rounded-xl transition-all duration-200 ${
+                      darkMode ? 'hover:bg-white/10 text-yellow-400' : 'hover:bg-slate-100 text-slate-500'
+                    }`}
+                    title="Alternar Tema"
                   >
-                    <IconBack className="w-6 h-6" />
+                    {darkMode ? '🌙' : '☀️'}
                   </button>
-                )}
-
-                <div className="h-6 w-px bg-gray-700 mx-1 hidden md:block"></div>
-
-                <button
-                  onClick={handleLogout}
-                  className="text-gray-300 hover:text-red-400 p-2 rounded-full hover:bg-white/5 transition-colors flex items-center gap-1"
-                  title="Sair"
-                >
-                  <IconLogout className="w-6 h-6" />
-                  <span className="text-xs font-medium hidden md:block">Sair</span>
-                </button>
+                  
+                  <button
+                    onClick={handleLogout}
+                    className={`flex items-center gap-2 p-2 px-3 rounded-xl transition-all duration-200 group ${
+                      darkMode ? 'hover:bg-red-500/10 text-slate-400 hover:text-red-400' : 'hover:bg-red-50 text-slate-500 hover:text-red-600'
+                    }`}
+                    title="Sair"
+                  >
+                    <IconLogout className="w-5 h-5 md:w-6 md:h-6" />
+                    <span className="text-xs font-black uppercase tracking-widest hidden lg:block">Sair</span>
+                  </button>
+                </div>
               </>
             )}
           </div>
         </div>
       </header>
 
+
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
 
         {/* View 1: Team Dashboard (List of Academies) - PUBLIC & ADMIN & PROFESSOR */}
-        {/* Note: Student role is redirected to profile automatically, so they don't see this list normally, but we hide it just in case */}
         {!selectedAcademyId && !selectedStudentId && (userRole === 'admin' || userRole === 'professor' || !isAuthenticated) && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-12 animate-in pb-12">
 
             {/* --- TEAM BANNER --- */}
-            <div className={`relative w-full h-64 md:h-96 rounded-2xl overflow-hidden shadow-lg mb-8 group bg-gray-200`}>
-              {data.team.banner ? (
-                <img src={data.team.banner} alt="Team Banner" className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
-              ) : (
-                <div className={`w-full h-full flex flex-col items-center justify-center ${darkMode ? 'bg-gray-800 text-gray-600' : 'bg-gray-200 text-gray-400'}`}>
-                  <IconCamera className="w-16 h-16 opacity-50" />
-                  <span className="text-sm font-bold uppercase tracking-widest mt-2 opacity-50">Banner da Equipe</span>
-                </div>
-              )}
-
-              {/* Admin Upload Overlay */}
-              {isAuthenticated && userRole === 'admin' && (
-                <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity duration-300">
-                  <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl flex items-center text-white font-bold hover:bg-white/20 transition-colors">
-                    <IconEdit className="w-5 h-5 mr-2" />
-                    {data.team.banner ? "Alterar Banner" : "Adicionar Banner"}
+            <div className="relative group">
+              <div className={`relative w-full h-64 md:h-[400px] rounded-[2rem] overflow-hidden shadow-2xl border transition-all duration-700 ${
+                darkMode ? 'bg-slate-900 border-white/5 shadow-black/40' : 'bg-slate-100 border-slate-200 shadow-slate-200/50'
+              }`}>
+                {data.team.banner ? (
+                  <img src={data.team.banner} alt="Team Banner" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+                ) : (
+                  <div className={`w-full h-full flex flex-col items-center justify-center ${darkMode ? 'text-slate-700' : 'text-slate-300'}`}>
+                    <IconCamera className="w-20 h-20 opacity-20 mb-4" />
+                    <span className="text-xs font-black uppercase tracking-[0.3em] opacity-40">Banner da Equipe</span>
                   </div>
-                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'team-banner')} />
-                </label>
-              )}
+                )}
+
+                {/* Glass Gradient Overlay */}
+                <div className={`absolute inset-0 bg-gradient-to-t via-transparent to-transparent opacity-60 ${
+                  darkMode ? 'from-slate-950' : 'from-slate-900/40'
+                }`}></div>
+
+                {/* Admin Upload Overlay */}
+                {isAuthenticated && userRole === 'admin' && (
+                  <label className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-all duration-300 backdrop-blur-[2px]">
+                    <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-4 px-6 rounded-2xl flex items-center text-white font-black uppercase tracking-widest text-xs hover:bg-white/20 transition-all transform hover:scale-105 active:scale-95">
+                      <IconEdit className="w-4 h-4 mr-2" />
+                      {data.team.banner ? "Alterar Banner" : "Adicionar Banner"}
+                    </div>
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'team-banner')} />
+                  </label>
+                )}
+
+                {/* Team Info Float */}
+                <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end">
+                  <div className="max-w-xl">
+                    <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter mb-2 drop-shadow-xl uppercase italic">
+                      {data.team.name}
+                    </h2>
+                    <p className="text-sm md:text-lg text-white/80 font-medium line-clamp-2 drop-shadow-lg">
+                      {data.team.description || "Onde campeões são forjados. Disciplina, Honra e Respeito."}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-              <div>
-                <h2 className={`text-2xl md:text-3xl font-bold mb-1 md:mb-2 ${darkMode ? 'text-white' : 'text-jiu-primary'}`}>Academias</h2>
-                <p className={`text-sm md:text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {isAuthenticated ? "Gerencie as unidades da sua equipe." : "Escolha sua unidade para acessar."}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-6 px-2">
+              <div className="text-center sm:text-left">
+                <h2 className={`text-3xl md:text-4xl font-black tracking-tighter uppercase italic ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  Unidades <span className="text-jiu-primary">Academia</span>
+                </h2>
+                <p className={`text-sm md:text-base font-medium opacity-60 mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {isAuthenticated ? "Gerencie as unidades da sua equipe com excelência." : "Escolha sua unidade para iniciar sua jornada."}
                 </p>
               </div>
               {isAuthenticated && userRole === 'admin' && (
                 <button
                   onClick={handleOpenNewAcademyModal}
-                  className="bg-jiu-accent hover:bg-red-700 text-white px-3 py-1.5 md:px-3.5 md:py-2 rounded-lg shadow-md flex items-center justify-center transition-all transform hover:scale-105 text-xs md:text-sm font-bold whitespace-nowrap"
+                  className="group relative overflow-hidden bg-jiu-primary hover:bg-blue-600 text-white px-6 py-3 rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 font-black uppercase tracking-widest text-sm"
                 >
-                  <IconPlus className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1 md:mr-1.5" />
+                  <IconPlus className="w-4 h-4 mr-2 transition-transform group-hover:rotate-90" />
                   Nova Academia
                 </button>
               )}
             </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {data.academies.map(academy => (
