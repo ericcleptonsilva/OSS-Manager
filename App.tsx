@@ -205,7 +205,8 @@ const App = () => {
     const normalizedEmail = email.trim().toLowerCase();
     
     // OVERRIDE: Emails de Administrador Conhecidos
-    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || normalizedEmail === 'admin@oss.com';
+    const fallbackEmail = import.meta.env.VITE_INITIAL_ADMIN_EMAIL?.trim().toLowerCase() || '';
+    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || (fallbackEmail !== '' && normalizedEmail === fallbackEmail);
 
     if (isAdminEmail || explicitRole === 'admin') {
       setUserRole('admin');
@@ -468,10 +469,10 @@ const App = () => {
     const team = { ...data.team };
     // Force specific requested admin email if empty or incorrect
     if (!team.adminEmail || team.adminEmail.includes('weverton')) {
-      team.adminEmail = 'admin@oss.com';
+      team.adminEmail = import.meta.env.VITE_INITIAL_ADMIN_EMAIL || '';
     }
     if (!team.adminPassword) {
-      team.adminPassword = 'admin';
+      team.adminPassword = import.meta.env.VITE_INITIAL_ADMIN_PASSWORD || '';
     }
     setNewTeam(team);
     setIsTeamModalOpen(true);
@@ -2732,7 +2733,7 @@ const App = () => {
               <input
                 type="email"
                 className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
-                placeholder="admin@oss.com"
+                placeholder="admin@example.com"
                 value={newTeam.adminEmail || ''}
                 readOnly={true} // Protect global admin email
                 title="Email fixo do Administrador"
