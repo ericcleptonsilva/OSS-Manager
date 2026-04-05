@@ -1,0 +1,4 @@
+## 2024-05-18 - Fix hardcoded admin backdoor credentials
+**Vulnerability:** The application contained hardcoded backdoor credentials (`admin@oss.com` and `admin`) in the `performCustomLogin` and role-checking logic, allowing an attacker to bypass authentication if default admin settings were not properly configured.
+**Learning:** Hardcoded credentials should never be used as fallbacks for initial setup. When relying on environment variables for initial admin credentials, it's critical to ensure that missing variables do not default to empty strings that could allow an empty-string login bypass.
+**Prevention:** Use environment variables for all initial/default credentials. Explicitly check that retrieved environment variables are not empty (`!== ''`) before performing authentication checks.
