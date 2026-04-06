@@ -507,25 +507,7 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       // Se falhou o login nativo, tentamos as credenciais "virtuais" legado (Team/Academy)
       console.log('[Auth] Usuário nativo não encontrado, tentando credenciais legadas...');
 
-      // 2. Verifica se é Admin de Equipe (Global)
-      const teamQuery = new Parse.Query('Team');
-      const team = await teamQuery.first();
-      // Admin padrão consolidated: admin@oss.com / admin
-      if (team) {
-        const storedAdminEmail = (team.get('adminEmail') || 'admin@oss.com').trim().toLowerCase();
-        const storedAdminPass = team.get('adminPassword') || 'admin';
-        
-        if (normalizedEmail === storedAdminEmail && pass === storedAdminPass) {
-          const mockAdmin = new Parse.User();
-          mockAdmin.id = 'legacy-admin';
-          mockAdmin.set('email', normalizedEmail);
-          mockAdmin.set('name', 'Team Admin');
-          mockAdmin.set('role', 'admin');
-          return mockAdmin;
-        }
-      }
-
-      // 3. Verifica se é Professor de Academia (Específico)
+      // 2. Verifica se é Professor de Academia (Específico)
       const academyQuery = new Parse.Query('Academy');
       // No Parse, equalTo em array verifica se o valor está PRESENTE no array
       academyQuery.equalTo('allowedEmails', normalizedEmail);
