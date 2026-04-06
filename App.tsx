@@ -204,8 +204,9 @@ const App = () => {
 
     const normalizedEmail = email.trim().toLowerCase();
     
-    // OVERRIDE: Emails de Administrador Conhecidos
-    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || normalizedEmail === 'admin@oss.com';
+    // OVERRIDE: Emails de Administrador Conhecidos (Removidos hardcoded, fallback para env)
+    const envAdminEmail = (import.meta.env.VITE_INITIAL_ADMIN_EMAIL || '').trim().toLowerCase();
+    const isAdminEmail = envAdminEmail !== '' && normalizedEmail === envAdminEmail;
 
     if (isAdminEmail || explicitRole === 'admin') {
       setUserRole('admin');
@@ -466,12 +467,9 @@ const App = () => {
 
   const handleEditTeam = () => {
     const team = { ...data.team };
-    // Force specific requested admin email if empty or incorrect
-    if (!team.adminEmail || team.adminEmail.includes('weverton')) {
-      team.adminEmail = 'admin@oss.com';
-    }
-    if (!team.adminPassword) {
-      team.adminPassword = 'admin';
+    // Force specific requested admin email if empty or incorrect (removido hardcoded)
+    if (!team.adminEmail) {
+      team.adminEmail = import.meta.env.VITE_INITIAL_ADMIN_EMAIL || '';
     }
     setNewTeam(team);
     setIsTeamModalOpen(true);
