@@ -1,0 +1,4 @@
+## 2024-04-07 - Hardcoded credentials and Privilege Escalation
+**Vulnerability:** The codebase contained hardcoded fallback credentials (`admin@oss.com` and `admin`) that bypassed authentication checks. In addition, standard users with no explicit role were automatically granted `admin` privileges on refresh, logout, or login due to fail-open logic defaulting the role to `admin`. Backdoor overrides specific to `ericlobobr.01@gmail.com` and `admin@oss.com` also granted `admin` role regardless of their actual database role.
+**Learning:** Fail-open defaults in authentication state and backdoor hardcoded checks can easily lead to privilege escalation and unauthorized access.
+**Prevention:** Always implement fail-secure defaults (e.g., default unassigned users to the lowest privilege `student` role) and never commit hardcoded backdoor credentials or role overrides in the source code.
