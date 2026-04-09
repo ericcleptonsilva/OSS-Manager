@@ -1,0 +1,5 @@
+
+## 2024-05-28 - [Sensitive Data Exposure in Fetch Full Data]
+**Vulnerability:** The `fetchFullData` service function fetched `Parse.User` (`Student`), `Academy`, and `Team` objects without explicitly excluding sensitive fields (`password` and `adminPassword`). Since this function is called immediately upon application load for authenticated users and loads all data locally into the `AppData` state, this exposed all users' credentials to the client. Additionally, `TrainingSession` returned base64 media which was a DoS risk if too many were retrieved.
+**Learning:** In a client-side heavy application where the state is populated aggressively (i.e. returning all students for caching), any retrieved field is visible in the browser tools. A common anti-pattern is relying on client-side mappers (e.g. `mapStudent`) to "hide" data from the UI when the actual sensitive data was already transferred across the network.
+**Prevention:** Always use `.exclude()` at the database query level (in Parse, e.g. `studentQuery.exclude('password')`) so sensitive fields are never transmitted to the client, effectively enforcing server-side sanitization.
