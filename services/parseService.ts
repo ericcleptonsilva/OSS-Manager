@@ -510,18 +510,25 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       // 2. Verifica se é Admin de Equipe (Global)
       const teamQuery = new Parse.Query('Team');
       const team = await teamQuery.first();
-      // Admin padrão consolidated: admin@oss.com / admin
+
       if (team) {
-        const storedAdminEmail = (team.get('adminEmail') || 'admin@oss.com').trim().toLowerCase();
-        const storedAdminPass = team.get('adminPassword') || 'admin';
+        const storedAdminEmail = team.get('adminEmail');
+        const storedAdminPass = team.get('adminPassword');
         
-        if (normalizedEmail === storedAdminEmail && pass === storedAdminPass) {
-          const mockAdmin = new Parse.User();
-          mockAdmin.id = 'legacy-admin';
-          mockAdmin.set('email', normalizedEmail);
-          mockAdmin.set('name', 'Team Admin');
-          mockAdmin.set('role', 'admin');
-          return mockAdmin;
+        // Ensure credentials are valid strings and not empty
+        if (storedAdminEmail && storedAdminEmail.trim() !== '' &&
+            storedAdminPass && storedAdminPass.trim() !== '') {
+
+          const normalizedStoredEmail = storedAdminEmail.trim().toLowerCase();
+
+          if (normalizedEmail === normalizedStoredEmail && pass === storedAdminPass) {
+            const mockAdmin = new Parse.User();
+            mockAdmin.id = 'legacy-admin';
+            mockAdmin.set('email', normalizedEmail);
+            mockAdmin.set('name', 'Team Admin');
+            mockAdmin.set('role', 'admin');
+            return mockAdmin;
+          }
         }
       }
 
