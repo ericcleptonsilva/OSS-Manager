@@ -1,0 +1,4 @@
+## 2026-04-15 - Privilege Escalation and Hardcoded Credentials
+**Vulnerability:** Hardcoded admin credentials (`admin@oss.com` and `ericlobobr.01@gmail.com`) and default fallback to 'admin' role in authentication logic (`App.tsx` and `parseService.ts`).
+**Learning:** Hardcoded credentials and fallback default to high privileges present a severe risk of unauthorized access. The system must explicitly deny access and default to the lowest privilege ('student') when roles are not defined. Custom authentication fallbacks were also allowing bypass if fields were not explicitly populated.
+**Prevention:** Implement secure default roles ('student' instead of 'admin'). Remove all hardcoded credentials from the code. Ensure custom authentication strictly checks that stored credentials are not empty strings. Always validate least privilege during state initialization and auth failovers.
