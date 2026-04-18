@@ -203,11 +203,8 @@ const App = () => {
     setData(fetchedData);
 
     const normalizedEmail = email.trim().toLowerCase();
-    
-    // OVERRIDE: Emails de Administrador Conhecidos
-    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || normalizedEmail === 'admin@oss.com';
 
-    if (isAdminEmail || explicitRole === 'admin') {
+    if (explicitRole === 'admin') {
       setUserRole('admin');
       setCurrentUserId(null);
       showNotification(`Bem-vindo, Admin!`);
@@ -466,13 +463,6 @@ const App = () => {
 
   const handleEditTeam = () => {
     const team = { ...data.team };
-    // Force specific requested admin email if empty or incorrect
-    if (!team.adminEmail || team.adminEmail.includes('weverton')) {
-      team.adminEmail = 'admin@oss.com';
-    }
-    if (!team.adminPassword) {
-      team.adminPassword = 'admin';
-    }
     setNewTeam(team);
     setIsTeamModalOpen(true);
   };
@@ -2732,10 +2722,10 @@ const App = () => {
               <input
                 type="email"
                 className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
-                placeholder="admin@oss.com"
+                placeholder="admin@example.com"
                 value={newTeam.adminEmail || ''}
-                readOnly={true} // Protect global admin email
-                title="Email fixo do Administrador"
+                onChange={(e) => setNewTeam({ ...newTeam, adminEmail: e.target.value })}
+                title="Email do Administrador"
               />
             </div>
 {/* Senha removida. Utilize o fluxo nativo do Parse para gerenciar senhas. */}
