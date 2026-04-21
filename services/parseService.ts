@@ -504,46 +504,9 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       user.set('role', role || 'student');
       return user;
     } catch (e: any) {
-      // Se falhou o login nativo, tentamos as credenciais "virtuais" legado (Team/Academy)
-      console.log('[Auth] Usuário nativo não encontrado, tentando credenciais legadas...');
-
-      // 2. Verifica se é Admin de Equipe (Global)
-      const teamQuery = new Parse.Query('Team');
-      const team = await teamQuery.first();
-      // Admin padrão consolidated: admin@oss.com / admin
-      if (team) {
-        const storedAdminEmail = (team.get('adminEmail') || 'admin@oss.com').trim().toLowerCase();
-        const storedAdminPass = team.get('adminPassword') || 'admin';
-        
-        if (normalizedEmail === storedAdminEmail && pass === storedAdminPass) {
-          const mockAdmin = new Parse.User();
-          mockAdmin.id = 'legacy-admin';
-          mockAdmin.set('email', normalizedEmail);
-          mockAdmin.set('name', 'Team Admin');
-          mockAdmin.set('role', 'admin');
-          return mockAdmin;
-        }
-      }
-
-      // 3. Verifica se é Professor de Academia (Específico)
-      const academyQuery = new Parse.Query('Academy');
-      // No Parse, equalTo em array verifica se o valor está PRESENTE no array
-      academyQuery.equalTo('allowedEmails', normalizedEmail);
-      const academy = await academyQuery.first();
-      
-      if (academy) {
-        const storedProfPass = academy.get('adminPassword');
-        if (storedProfPass === pass) {
-          const mockProf = new Parse.User();
-          mockProf.id = 'legacy-prof-' + academy.id;
-          mockProf.set('email', normalizedEmail);
-          mockProf.set('name', academy.get('instructorName') || 'Professor');
-          mockProf.set('role', 'professor');
-          return mockProf;
-        }
-      }
-
-      // Se nada acima funcionou, relança o erro original
+      console.log('[Auth] Falha no login nativo do usuário:', e);
+      // Removed legacy virtual credentials fallback for security reasons
+      // (It allowed hardcoded passwords and bypassing Parse Server auth)
       throw e;
     }
   } catch (error) {
