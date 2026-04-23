@@ -203,11 +203,8 @@ const App = () => {
     setData(fetchedData);
 
     const normalizedEmail = email.trim().toLowerCase();
-    
-    // OVERRIDE: Emails de Administrador Conhecidos
-    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || normalizedEmail === 'admin@oss.com';
 
-    if (isAdminEmail || explicitRole === 'admin') {
+    if (explicitRole === 'admin') {
       setUserRole('admin');
       setCurrentUserId(null);
       showNotification(`Bem-vindo, Admin!`);
@@ -227,8 +224,8 @@ const App = () => {
         setSelectedStudentId(studentFound.id);
         showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
       } else {
-        // Fallback para admin caso não seja nada acima (Segurança)
-        setUserRole('admin');
+        // Fallback para student caso não seja nada acima (Segurança)
+        setUserRole('student');
         setCurrentUserId(null);
         showNotification(`Bem-vindo!`);
       }
@@ -466,13 +463,6 @@ const App = () => {
 
   const handleEditTeam = () => {
     const team = { ...data.team };
-    // Force specific requested admin email if empty or incorrect
-    if (!team.adminEmail || team.adminEmail.includes('weverton')) {
-      team.adminEmail = 'admin@oss.com';
-    }
-    if (!team.adminPassword) {
-      team.adminPassword = 'admin';
-    }
     setNewTeam(team);
     setIsTeamModalOpen(true);
   };
