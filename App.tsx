@@ -204,10 +204,8 @@ const App = () => {
 
     const normalizedEmail = email.trim().toLowerCase();
     
-    // OVERRIDE: Emails de Administrador Conhecidos
-    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || normalizedEmail === 'admin@oss.com';
-
-    if (isAdminEmail || explicitRole === 'admin') {
+    // RBAC strictly follows explicitRole provided by authentication service
+    if (explicitRole === 'admin') {
       setUserRole('admin');
       setCurrentUserId(null);
       showNotification(`Bem-vindo, Admin!`);
@@ -466,13 +464,6 @@ const App = () => {
 
   const handleEditTeam = () => {
     const team = { ...data.team };
-    // Force specific requested admin email if empty or incorrect
-    if (!team.adminEmail || team.adminEmail.includes('weverton')) {
-      team.adminEmail = 'admin@oss.com';
-    }
-    if (!team.adminPassword) {
-      team.adminPassword = 'admin';
-    }
     setNewTeam(team);
     setIsTeamModalOpen(true);
   };
