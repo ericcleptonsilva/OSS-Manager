@@ -204,10 +204,7 @@ const App = () => {
 
     const normalizedEmail = email.trim().toLowerCase();
     
-    // OVERRIDE: Emails de Administrador Conhecidos
-    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || normalizedEmail === 'admin@oss.com';
-
-    if (isAdminEmail || explicitRole === 'admin') {
+    if (explicitRole === 'admin') {
       setUserRole('admin');
       setCurrentUserId(null);
       showNotification(`Bem-vindo, Admin!`);
