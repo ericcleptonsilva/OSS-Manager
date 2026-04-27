@@ -477,6 +477,10 @@ export const saveTeam = async (teamData: Partial<Team>) => {
   };
 };
 export const performCustomLogin = async (email: string, pass: string): Promise<Parse.User> => {
+  if (!email || !pass || email.trim() === '' || pass.trim() === '') {
+    throw new Error('Email e senha são obrigatórios.');
+  }
+
   const normalizedEmail = email.trim().toLowerCase();
 
   try {
@@ -510,12 +514,12 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       // 2. Verifica se é Admin de Equipe (Global)
       const teamQuery = new Parse.Query('Team');
       const team = await teamQuery.first();
-      // Admin padrão consolidated: admin@oss.com / admin
+
       if (team) {
-        const storedAdminEmail = (team.get('adminEmail') || 'admin@oss.com').trim().toLowerCase();
-        const storedAdminPass = team.get('adminPassword') || 'admin';
+        const storedAdminEmail = team.get('adminEmail')?.trim().toLowerCase();
+        const storedAdminPass = team.get('adminPassword');
         
-        if (normalizedEmail === storedAdminEmail && pass === storedAdminPass) {
+        if (storedAdminEmail && storedAdminPass && normalizedEmail === storedAdminEmail && pass === storedAdminPass) {
           const mockAdmin = new Parse.User();
           mockAdmin.id = 'legacy-admin';
           mockAdmin.set('email', normalizedEmail);
@@ -533,7 +537,7 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       
       if (academy) {
         const storedProfPass = academy.get('adminPassword');
-        if (storedProfPass === pass) {
+        if (storedProfPass && storedProfPass === pass) {
           const mockProf = new Parse.User();
           mockProf.id = 'legacy-prof-' + academy.id;
           mockProf.set('email', normalizedEmail);
