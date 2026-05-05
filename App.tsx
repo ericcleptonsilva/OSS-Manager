@@ -24,7 +24,7 @@ const App = () => {
 
   // 0. Auth State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [userRole, setUserRole] = useState<UserRole>('admin');
+  const [userRole, setUserRole] = useState<UserRole>('student');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isPublicDataLoaded, setIsPublicDataLoaded] = useState(false);
@@ -126,7 +126,7 @@ const App = () => {
       const email = currentUser.get('email') || '';
       let role = currentUser.get('role') as UserRole;
       if (!role) {
-        role = 'admin';
+        role = 'student';
       }
       checkUserRoleAndLoadData(email, role);
     } else {
@@ -204,10 +204,7 @@ const App = () => {
 
     const normalizedEmail = email.trim().toLowerCase();
     
-    // OVERRIDE: Emails de Administrador Conhecidos
-    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || normalizedEmail === 'admin@oss.com';
-
-    if (isAdminEmail || explicitRole === 'admin') {
+    if (explicitRole === 'admin') {
       setUserRole('admin');
       setCurrentUserId(null);
       showNotification(`Bem-vindo, Admin!`);
@@ -227,8 +224,8 @@ const App = () => {
         setSelectedStudentId(studentFound.id);
         showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
       } else {
-        // Fallback para admin caso não seja nada acima (Segurança)
-        setUserRole('admin');
+        // Fallback para student caso não seja nada acima (Segurança)
+        setUserRole('student');
         setCurrentUserId(null);
         showNotification(`Bem-vindo!`);
       }
@@ -247,8 +244,8 @@ const App = () => {
 
       let role = user.get('role') as UserRole;
       if (!role) {
-        // If no role field (Standard Parse User), assume Admin
-        role = 'admin';
+        // If no role field (Standard Parse User), assume Student
+        role = 'student';
       }
 
       // Persist session locally for non-Parse users (Mock users)
