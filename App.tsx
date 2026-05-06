@@ -24,7 +24,7 @@ const App = () => {
 
   // 0. Auth State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [userRole, setUserRole] = useState<UserRole>('admin');
+  const [userRole, setUserRole] = useState<UserRole>('student');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isPublicDataLoaded, setIsPublicDataLoaded] = useState(false);
@@ -227,8 +227,8 @@ const App = () => {
         setSelectedStudentId(studentFound.id);
         showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
       } else {
-        // Fallback para admin caso não seja nada acima (Segurança)
-        setUserRole('admin');
+        // Fallback role has been changed to 'student' to enforce the principle of least privilege.
+        setUserRole('student');
         setCurrentUserId(null);
         showNotification(`Bem-vindo!`);
       }
@@ -247,8 +247,8 @@ const App = () => {
 
       let role = user.get('role') as UserRole;
       if (!role) {
-        // If no role field (Standard Parse User), assume Admin
-        role = 'admin';
+        // If no role field (Standard Parse User), assume student role to prevent privilege escalation.
+        role = 'student';
       }
 
       // Persist session locally for non-Parse users (Mock users)
