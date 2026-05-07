@@ -512,10 +512,10 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       const team = await teamQuery.first();
       // Admin padrão consolidated: admin@oss.com / admin
       if (team) {
-        const storedAdminEmail = (team.get('adminEmail') || 'admin@oss.com').trim().toLowerCase();
-        const storedAdminPass = team.get('adminPassword') || 'admin';
+        const storedAdminEmail = (team.get('adminEmail') || '').trim().toLowerCase();
+        const storedAdminPass = team.get('adminPassword') || '';
         
-        if (normalizedEmail === storedAdminEmail && pass === storedAdminPass) {
+        if (storedAdminEmail && storedAdminPass && normalizedEmail === storedAdminEmail && pass === storedAdminPass) {
           const mockAdmin = new Parse.User();
           mockAdmin.id = 'legacy-admin';
           mockAdmin.set('email', normalizedEmail);
