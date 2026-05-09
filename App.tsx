@@ -204,10 +204,7 @@ const App = () => {
 
     const normalizedEmail = email.trim().toLowerCase();
     
-    // OVERRIDE: Emails de Administrador Conhecidos
-    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || normalizedEmail === 'admin@oss.com';
-
-    if (isAdminEmail || explicitRole === 'admin') {
+    if (explicitRole === 'admin') {
       setUserRole('admin');
       setCurrentUserId(null);
       showNotification(`Bem-vindo, Admin!`);
@@ -247,8 +244,8 @@ const App = () => {
 
       let role = user.get('role') as UserRole;
       if (!role) {
-        // If no role field (Standard Parse User), assume Admin
-        role = 'admin';
+        // Se a role não estiver definida explicitamente, assume o menor privilégio (student)
+        role = 'student';
       }
 
       // Persist session locally for non-Parse users (Mock users)
@@ -466,13 +463,6 @@ const App = () => {
 
   const handleEditTeam = () => {
     const team = { ...data.team };
-    // Force specific requested admin email if empty or incorrect
-    if (!team.adminEmail || team.adminEmail.includes('weverton')) {
-      team.adminEmail = 'admin@oss.com';
-    }
-    if (!team.adminPassword) {
-      team.adminPassword = 'admin';
-    }
     setNewTeam(team);
     setIsTeamModalOpen(true);
   };
