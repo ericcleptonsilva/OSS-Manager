@@ -203,11 +203,9 @@ const App = () => {
     setData(fetchedData);
 
     const normalizedEmail = email.trim().toLowerCase();
-    
-    // OVERRIDE: Emails de Administrador Conhecidos
-    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || normalizedEmail === 'admin@oss.com';
 
-    if (isAdminEmail || explicitRole === 'admin') {
+    // 🔒 Sentinel: Removed hardcoded backdoor emails
+    if (explicitRole === 'admin') {
       setUserRole('admin');
       setCurrentUserId(null);
       showNotification(`Bem-vindo, Admin!`);
@@ -466,12 +464,12 @@ const App = () => {
 
   const handleEditTeam = () => {
     const team = { ...data.team };
-    // Force specific requested admin email if empty or incorrect
-    if (!team.adminEmail || team.adminEmail.includes('weverton')) {
-      team.adminEmail = 'admin@oss.com';
+    // 🔒 Sentinel: Removed hardcoded default admin credentials from team edit modal
+    if (!team.adminEmail) {
+      team.adminEmail = '';
     }
     if (!team.adminPassword) {
-      team.adminPassword = 'admin';
+      team.adminPassword = '';
     }
     setNewTeam(team);
     setIsTeamModalOpen(true);
