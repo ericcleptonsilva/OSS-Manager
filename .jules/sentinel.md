@@ -1,0 +1,4 @@
+## 2026-04-05 - Fix privilege escalation in default roles and backdoors
+**Vulnerability:** The application defaulted the user role to 'admin' in state initialization and fallback scenarios, and included hardcoded backdoor emails (`ericlobobr.01@gmail.com` and `admin@oss.com`) that bypassed authentication checks to grant admin access. This represents a critical privilege escalation vulnerability.
+**Learning:** Defaulting to the highest privilege level as a fallback or initial state is a severe security anti-pattern. Hardcoding credentials or specific emails to grant elevated privileges in client-side code completely bypasses secure authentication mechanisms.
+**Prevention:** Always default to the principle of least privilege ('student' in this case) for initial states and fallbacks. Never hardcode credentials or backdoor access in the frontend; authorization must be securely validated based on verified identity via the backend.
