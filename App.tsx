@@ -126,7 +126,7 @@ const App = () => {
       const email = currentUser.get('email') || '';
       let role = currentUser.get('role') as UserRole;
       if (!role) {
-        role = 'admin';
+        role = 'student';
       }
       checkUserRoleAndLoadData(email, role);
     } else {
@@ -227,8 +227,8 @@ const App = () => {
         setSelectedStudentId(studentFound.id);
         showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
       } else {
-        // Fallback para admin caso não seja nada acima (Segurança)
-        setUserRole('admin');
+        // Fallback para student caso não seja nada acima (Segurança)
+        setUserRole('student');
         setCurrentUserId(null);
         showNotification(`Bem-vindo!`);
       }
@@ -247,8 +247,8 @@ const App = () => {
 
       let role = user.get('role') as UserRole;
       if (!role) {
-        // If no role field (Standard Parse User), assume Admin
-        role = 'admin';
+        // If no role field (Standard Parse User), assume student
+        role = 'student';
       }
 
       // Persist session locally for non-Parse users (Mock users)
