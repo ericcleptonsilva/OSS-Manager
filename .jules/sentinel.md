@@ -1,0 +1,4 @@
+## 2024-05-24 - [Fix privilege escalation in fallback role assignment]
+**Vulnerability:** Fallback logic in `App.tsx` assigned the `admin` role by default when a user's role was undefined or not explicitly matched, violating the principle of least privilege.
+**Learning:** To prevent accidental privilege escalation, default roles must always be the most restrictive option available (`student` in this case), never the most permissive.
+**Prevention:** Always initialize frontend state and fallback user roles to the least privileged role. Implement robust, explicit role checks for any administrative access.
