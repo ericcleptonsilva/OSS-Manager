@@ -1,0 +1,4 @@
+## 2025-02-27 - Remove Hardcoded Backdoor and Empty String Auth Bypass
+**Vulnerability:** The application contained hardcoded admin backdoor credentials (`ericlobobr.01@gmail.com` and `admin@oss.com` implicitly mapped to admin) and lacked checks on the database payload values during fallback authentication. This could allow an empty string password bypass if `adminPassword` was null or missing in Parse `Team` or `Academy` objects.
+**Learning:** Legacy authentication systems using "fallback mock users" often retain hardcoded logic. Checking that the retrieved `storedAdminPass` is truthy before string comparison prevents empty string matches against empty inputs.
+**Prevention:** Always enforce strict `if (storedSecret && pass === storedSecret)` checks for manual fallback authentication. Never use hardcoded strings for authorization roles; rely on database records or Parse Roles.
