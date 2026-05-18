@@ -203,31 +203,30 @@ const App = () => {
     setData(fetchedData);
 
     const normalizedEmail = email.trim().toLowerCase();
-    
-    // OVERRIDE: Emails de Administrador Conhecidos
-    const isAdminEmail = normalizedEmail === 'ericlobobr.01@gmail.com' || normalizedEmail === 'admin@oss.com';
 
-    if (isAdminEmail || explicitRole === 'admin') {
+    // SECURITY: Role assignment is strictly based on the authenticated role from the server.
+    // No hardcoded email overrides allowed.
+    if (explicitRole === 'admin') {
       setUserRole('admin');
       setCurrentUserId(null);
       showNotification(`Bem-vindo, Admin!`);
+    } else if (explicitRole === 'professor') {
+      // Se for um professor logando (explicitRole vindo do login do professor)
+      setUserRole('professor');
+      setCurrentUserId(null);
+      showNotification(`Bem-vindo, Professor!`);
     } else {
       // 1. Verifique se é um aluno (Correspondência por E-MAIL)
       const studentFound = fetchedData.students.find(s => s.email.toLowerCase() === normalizedEmail);
 
-      // Se for um professor logando (explicitRole vindo do login do professor)
-      if (explicitRole === 'professor') {
-        setUserRole('professor');
-        setCurrentUserId(null);
-        showNotification(`Bem-vindo, Professor!`);
-      } else if (studentFound) {
+      if (studentFound) {
         setUserRole('student');
         setCurrentUserId(studentFound.id);
         setSelectedAcademyId(studentFound.academyId);
         setSelectedStudentId(studentFound.id);
         showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
       } else {
-        // Fallback para admin caso não seja nada acima (Segurança)
+        // Fallback para admin caso não seja nada acima
         setUserRole('admin');
         setCurrentUserId(null);
         showNotification(`Bem-vindo!`);
@@ -465,15 +464,8 @@ const App = () => {
   };
 
   const handleEditTeam = () => {
-    const team = { ...data.team };
-    // Force specific requested admin email if empty or incorrect
-    if (!team.adminEmail || team.adminEmail.includes('weverton')) {
-      team.adminEmail = 'admin@oss.com';
-    }
-    if (!team.adminPassword) {
-      team.adminPassword = 'admin';
-    }
-    setNewTeam(team);
+    // SECURITY: Use actual stored data only — no hardcoded credential injection.
+    setNewTeam({ ...data.team });
     setIsTeamModalOpen(true);
   };
 
@@ -748,17 +740,18 @@ const App = () => {
           currentUserEmail = JSON.parse(stored).email;
         }
       }
-      if (targetAcademy.allowedEmails && targetAcademy.allowedEmails.length > 0) {
-        const normalizedAllowed = targetAcademy.allowedEmails.map(e => e.trim().toLowerCase());
-        const normalizedCurrent = currentUserEmail ? currentUserEmail.trim().toLowerCase() : '';
-        if (!normalizedCurrent || !normalizedAllowed.includes(normalizedCurrent)) {
-          if (confirm("Você não tem permissão para esta academia com o usuário atual. Deseja fazer login com outra conta?")) {
-            setLoginTargetAcademyId(academyId);
-            setIsLoginModalOpen(true);
-          }
-          return;
+      // SECURITY: "Deny by default" — professor precisa estar na lista allowedEmails.
+      // Se a lista está vazia, somente admin pode acessar.
+      const normalizedAllowed = (targetAcademy.allowedEmails || []).map(e => e.trim().toLowerCase());
+      const normalizedCurrent = currentUserEmail ? currentUserEmail.trim().toLowerCase() : '';
+      if (!normalizedCurrent || !normalizedAllowed.includes(normalizedCurrent)) {
+        if (confirm("Você não tem permissão para esta academia com o usuário atual. Deseja fazer login com outra conta?")) {
+          setLoginTargetAcademyId(academyId);
+          setIsLoginModalOpen(true);
         }
+        return;
       }
+
       handleSelectAcademy(academyId);
     } else {
       setLoginTargetAcademyId(academyId);

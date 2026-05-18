@@ -24,8 +24,11 @@ O sistema passou por uma reformulação completa de segurança para garantir a p
   - `StudentFinancialCard`: Refatoração completa com foco em legibilidade.
   - `Modal`: Implementação de design de vidro consistente.
 
-### 2. Correções de Segurança e Autenticação (RBAC)
-- **Admin Override**: Implementada lógica de prioridade para garantir acesso administrativo aos e-mails `ericlobobr.01@gmail.com` e `admin@oss.com`, independente da role no banco de dados.
+### 2. Correções de Segurança e Autenticação (RBAC) — Atualizado Maio 2026
+- **CRÍTICO — Remoção de Backdoor Hardcoded**: Removida lógica de override de role baseada em e-mails fixos em `App.tsx`. A role agora é atribuída exclusivamente com base no valor provido pelo servidor.
+- **CRÍTICO — Remoção de Credenciais Padrão Hardcoded**: Removidos os fallbacks de credenciais da função de login legado em `parseService.ts`. Credenciais somente são aceitas se armazenadas no banco de dados com valor não-vazio.
+- **CRÍTICO — Bypass de String Vazia**: Adicionadas verificações explícitas de `length > 0` antes das comparações de credenciais no fluxo de login legado, prevenindo match acidental com inputs vazios.
+- **CRÍTICO — Injeção de Credenciais Padrão na UI**: Removida a injeção automática de credenciais padrão ao abrir o modal de edição de equipe em `handleEditTeam`.
 - **Correção de Loop de Login**: Ajustada a função `checkUserRoleAndLoadData` para evitar que administradores fossem redirecionados incorretamente para o portal do aluno.
 - **Normalização de Dados**: Busca de faixas (belts) agora é insensível a maiúsculas/minúsculas, resolvendo falhas de exibição com dados legados.
 
@@ -132,7 +135,7 @@ Acesse: **Back4App Dashboard → Database → [Classe] → Class Level Permissio
 
 
 ### Administração e Segurança
-- **Correção de Credenciais**: O email `admin@oss.com` foi consolidado como o único acesso administrativo global. Removidas referências a emails de teste anteriores.
+- **Correção de Credenciais**: Credenciais de acesso administrativo foram consolidadas e as referências a credenciais de teste anteriores foram removidas.
 - **Gestão de Professores**: Adicionada nova seção no modal de **Configurações da Equipe** para listar e gerenciar o acesso de professores de todas as academias em um só lugar.
 - **Botão Novo Professor**: Implementado atalho direto para cadastrar novos instrutores vinculados a unidades.
 

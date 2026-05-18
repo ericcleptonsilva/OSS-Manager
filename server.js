@@ -10,6 +10,31 @@ const distPath = join(__dirname, 'dist');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// --- SECURITY HEADERS ---
+app.use((req, res, next) => {
+  // Previne clickjacking
+  res.setHeader('X-Frame-Options', 'DENY');
+  // Previne MIME-type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // Força HTTPS por 1 ano
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  // Limita referrer
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // Restringe permissões do browser
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  // Content Security Policy
+  res.setHeader('Content-Security-Policy', [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'", // unsafe-inline necessário para Vite bundled JS
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src https://fonts.gstatic.com",
+    "img-src 'self' data: blob:",
+    "connect-src 'self' https://parseapi.back4app.com https://generativelanguage.googleapis.com",
+    "frame-ancestors 'none'"
+  ].join('; '));
+  next();
+});
+
 console.log(`Iniciando servidor na porta ${PORT}...`);
 console.log(`Procurando arquivos em: ${distPath}`);
 

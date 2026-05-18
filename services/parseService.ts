@@ -505,17 +505,26 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       return user;
     } catch (e: any) {
       // Se falhou o login nativo, tentamos as credenciais "virtuais" legado (Team/Academy)
-      console.log('[Auth] Usuário nativo não encontrado, tentando credenciais legadas...');
+      // SECURITY: Não logar detalhes do fluxo de autenticação em produção.
+      if (import.meta.env.DEV) {
+        console.log('[Auth] Tentando credenciais legadas...');
+      }
 
       // 2. Verifica se é Admin de Equipe (Global)
+      // SECURITY: Sem fallback hardcoded — credenciais devem estar no banco de dados.
       const teamQuery = new Parse.Query('Team');
       const team = await teamQuery.first();
-      // Admin padrão consolidated: admin@oss.com / admin
       if (team) {
-        const storedAdminEmail = (team.get('adminEmail') || 'admin@oss.com').trim().toLowerCase();
-        const storedAdminPass = team.get('adminPassword') || 'admin';
+        const storedAdminEmail = (team.get('adminEmail') || '').trim().toLowerCase();
+        const storedAdminPass = team.get('adminPassword') || '';
         
-        if (normalizedEmail === storedAdminEmail && pass === storedAdminPass) {
+        // SECURITY: Somente compara se AMBAS as credenciais armazenadas são não-vazias.
+        if (
+          storedAdminEmail.length > 0 &&
+          storedAdminPass.length > 0 &&
+          normalizedEmail === storedAdminEmail &&
+          pass === storedAdminPass
+        ) {
           const mockAdmin = new Parse.User();
           mockAdmin.id = 'legacy-admin';
           mockAdmin.set('email', normalizedEmail);
@@ -532,8 +541,9 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       const academy = await academyQuery.first();
       
       if (academy) {
-        const storedProfPass = academy.get('adminPassword');
-        if (storedProfPass === pass) {
+        const storedProfPass = (academy.get('adminPassword') || '') as string;
+        // SECURITY: Somente compara se a senha armazenada é não-vazia.
+        if (storedProfPass.length > 0 && storedProfPass === pass) {
           const mockProf = new Parse.User();
           mockProf.id = 'legacy-prof-' + academy.id;
           mockProf.set('email', normalizedEmail);

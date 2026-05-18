@@ -11,7 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
-
+MEMORY.md
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .env
 .env.local
+_issue_body.md
+ARCHITECTURE_NOTES.md
+FIX_INSTRUCTIONS.md
