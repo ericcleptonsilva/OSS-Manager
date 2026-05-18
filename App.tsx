@@ -2425,10 +2425,10 @@ const App = () => {
       >
         <form onSubmit={handleSaveTransaction} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Aluno</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Aluno</label>
             <select
               required
-              className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
               value={newTransaction.studentId || ''}
               onChange={e => setNewTransaction({ ...newTransaction, studentId: e.target.value })}
             >
@@ -2441,9 +2441,9 @@ const App = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Tipo</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo</label>
               <select
-                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
+                className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 value={newTransaction.type}
                 onChange={e => setNewTransaction({ ...newTransaction, type: e.target.value as FinancialType })}
               >
@@ -2453,12 +2453,12 @@ const App = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Valor (R$) - Por parcela</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valor (R$) - Por parcela</label>
               <input
                 type="number"
                 step="0.01"
                 required
-                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900 placeholder-gray-500"
+                className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50 placeholder-gray-500"
                 value={newTransaction.amount}
                 onChange={e => setNewTransaction({ ...newTransaction, amount: parseFloat(e.target.value) })}
               />
@@ -2467,11 +2467,11 @@ const App = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Vencimento (1ª Parcela)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Vencimento (1ª Parcela)</label>
               <input
                 type="date"
                 required
-                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
+                className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 value={newTransaction.dueDate}
                 onChange={e => setNewTransaction({ ...newTransaction, dueDate: e.target.value })}
               />
@@ -2479,13 +2479,13 @@ const App = () => {
             {/* Oculta opção de recorrência se estiver editando uma cobrança existente */}
             {!(newTransaction.id && !newTransaction.id.startsWith('fin-')) && (
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">Quantidade de Meses</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantidade de Meses</label>
                 <input
                   type="number"
                   min="1"
                   max="120"
                   required
-                  className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
+                  className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                   value={recurrenceCount}
                   onChange={e => setRecurrenceCount(parseInt(e.target.value))}
                 />
@@ -2494,10 +2494,10 @@ const App = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Pago em (Opcional - Quita todas)</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pago em (Opcional - Quita todas)</label>
             <input
               type="date"
-              className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
               value={newTransaction.paidDate || ''}
               onChange={e => setNewTransaction({ ...newTransaction, paidDate: e.target.value })}
             />
@@ -2505,10 +2505,10 @@ const App = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Descrição (Opcional)</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição (Opcional)</label>
             <input
               type="text"
-              className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900 placeholder-gray-500"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50 placeholder-gray-500"
               placeholder="Ex: Mensalidade 2023"
               value={newTransaction.description || ''}
               onChange={e => setNewTransaction({ ...newTransaction, description: e.target.value })}
@@ -2551,7 +2551,7 @@ const App = () => {
 
         <form onSubmit={handleConfirmMigration} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email (Academia de Destino)</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email (Academia de Destino)</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <IconMail className="h-5 w-5 text-gray-400" />
@@ -2698,20 +2698,20 @@ const App = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Nome da Equipe</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome da Equipe</label>
             <input
               required
               type="text"
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50 placeholder-gray-500"
               value={newTeam.name || ''}
               onChange={e => setNewTeam({ ...newTeam, name: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Descrição / Slogan</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição / Slogan</label>
             <textarea
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900 placeholder-gray-500"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50 placeholder-gray-500"
               rows={3}
               value={newTeam.description || ''}
               onChange={e => setNewTeam({ ...newTeam, description: e.target.value })}
@@ -2721,10 +2721,10 @@ const App = () => {
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
             <h4 className="font-bold text-gray-800 text-sm border-b pb-2">Credenciais de Administrador (Global)</h4>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email do Admin</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email do Admin</label>
               <input
                 type="email"
-                className="w-full rounded-lg border-gray-300 border p-2.5 bg-white text-gray-900"
+                className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 placeholder="admin@oss.com"
                 value={newTeam.adminEmail || ''}
                 readOnly={true} // Protect global admin email
@@ -2890,32 +2890,32 @@ const App = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Academia</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome da Academia</label>
             <input
               required
               type="text"
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
               placeholder="Ex: Matriz Centro"
               value={newAcademy.name || ''}
               onChange={e => setNewAcademy({ ...newAcademy, name: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Endereço</label>
             <input
               type="text"
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
               placeholder="Rua..."
               value={newAcademy.address || ''}
               onChange={e => setNewAcademy({ ...newAcademy, address: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Instrutor Responsável</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Instrutor Responsável</label>
             <input
               required
               type="text"
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
               placeholder="Nome do Professor"
               value={newAcademy.instructorName || ''}
               onChange={e => setNewAcademy({ ...newAcademy, instructorName: e.target.value })}
@@ -2927,10 +2927,10 @@ const App = () => {
               <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Credenciais de Acesso (Professor)</label>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email de Login</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email de Login</label>
               <input
                 type="email"
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary outline-none bg-white text-gray-900"
+                className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary outline-none bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 placeholder="email@professor.com"
                 value={newAcademy.allowedEmails?.[0] || ''}
                 onChange={e => setNewAcademy({ ...newAcademy, allowedEmails: [e.target.value] })}
@@ -2940,9 +2940,9 @@ const App = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição</label>
             <textarea
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
               placeholder="Sobre a academia..."
               rows={3}
               value={newAcademy.description || ''}
@@ -2990,7 +2990,7 @@ const App = () => {
                               <span className="text-[10px] text-gray-500 block uppercase">Início</span>
                               <input
                                 type="time"
-                                className="w-full rounded border-gray-300 border p-1 text-sm focus:ring-1 focus:ring-jiu-primary bg-white text-gray-900"
+                                className="w-full rounded border-gray-300 border p-1 text-sm focus:ring-1 focus:ring-jiu-primary bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                                 value={range.openTime}
                                 onChange={(e) => handleScheduleChange(day, 'updateRange', { index: rangeIndex, field: 'openTime', value: e.target.value })}
                               />
@@ -3000,7 +3000,7 @@ const App = () => {
                               <span className="text-[10px] text-gray-500 block uppercase">Fim</span>
                               <input
                                 type="time"
-                                className="w-full rounded border-gray-300 border p-1 text-sm focus:ring-1 focus:ring-jiu-primary bg-white text-gray-900"
+                                className="w-full rounded border-gray-300 border p-1 text-sm focus:ring-1 focus:ring-jiu-primary bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                                 value={range.closeTime}
                                 onChange={(e) => handleScheduleChange(day, 'updateRange', { index: rangeIndex, field: 'closeTime', value: e.target.value })}
                               />
@@ -3071,11 +3071,11 @@ const App = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome Completo</label>
             <input
               required
               type="text"
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
               value={newStudent.name || ''}
               onChange={e => setNewStudent({ ...newStudent, name: e.target.value })}
             />
@@ -3083,10 +3083,10 @@ const App = () => {
 
           {/* Admin Migration Feature */}
           {userRole === 'admin' && (
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-              <label className="block text-sm font-bold text-blue-800 mb-1">Academia (Migração)</label>
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800/30">
+              <label className="block text-sm font-bold text-blue-800 dark:text-blue-300 mb-1">Academia (Migração)</label>
               <select
-                className="w-full rounded-lg border-blue-300 border p-2.5 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full rounded-lg border-blue-300 border p-3 min-h-[48px] bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={newStudent.academyId || selectedAcademyId || ''}
                 onChange={e => setNewStudent({ ...newStudent, academyId: e.target.value })}
               >
@@ -3104,21 +3104,21 @@ const App = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data de Nascimento</label>
               <input
                 type="date"
                 required
                 max={new Date().toISOString().split('T')[0]}
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+                className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 value={newStudent.birthDate || ''}
                 onChange={e => setNewStudent({ ...newStudent, birthDate: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Telefone</label>
               <input
                 type="tel"
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+                className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 value={newStudent.phone || ''}
                 onChange={e => setNewStudent({ ...newStudent, phone: e.target.value })}
               />
@@ -3168,10 +3168,10 @@ const App = () => {
 
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email (Login)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email (Login)</label>
               <input
                 type="email"
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+                className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 value={newStudent.email || ''}
                 onChange={e => setNewStudent({ ...newStudent, email: e.target.value })}
               />
@@ -3181,9 +3181,9 @@ const App = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Faixa Atual</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Faixa Atual</label>
               <select
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+                className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 value={newStudent.belt}
                 onChange={e => setNewStudent({ ...newStudent, belt: e.target.value as BeltColor })}
               >
@@ -3200,11 +3200,11 @@ const App = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Início dos Treinos</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Início dos Treinos</label>
               <input
                 type="date"
                 required
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white text-gray-900"
+                className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 value={newStudent.startDate || ''}
                 onChange={e => setNewStudent({ ...newStudent, startDate: e.target.value })}
               />
@@ -3237,12 +3237,12 @@ const App = () => {
       >
         <form onSubmit={handleSaveTraining} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Data do Treino</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data do Treino</label>
             <input
               type="date"
               required
               max={new Date().toISOString().split('T')[0]}
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary outline-none bg-white text-gray-900"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary outline-none bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
               value={newTraining.date || ''}
               onChange={e => setNewTraining({ ...newTraining, date: e.target.value })}
             />
@@ -3250,11 +3250,11 @@ const App = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Duração</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Duração</label>
               <input
                 type="text"
                 placeholder="ex: 1h 30min"
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary outline-none bg-white text-gray-900"
+                className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary outline-none bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 value={newTraining.duration || ''}
                 onChange={e => setNewTraining({ ...newTraining, duration: e.target.value })}
               />
@@ -3263,10 +3263,10 @@ const App = () => {
 
           {/* Multiple Techniques Logic */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Focos do Treino / Movimentos</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Focos do Treino / Movimentos</label>
             <div className="flex gap-2 mb-2">
               <select
-                className="flex-1 rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary outline-none bg-white text-gray-900"
+                className="flex-1 rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary outline-none bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 value={currentTechniqueToAdd}
                 onChange={e => setCurrentTechniqueToAdd(e.target.value)}
               >
@@ -3305,9 +3305,9 @@ const App = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição / Detalhes</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição / Detalhes</label>
             <textarea
-              className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-jiu-primary outline-none bg-white text-gray-900"
+              className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary outline-none bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
               rows={3}
               placeholder="Descreva o que foi treinado, pontos de dificuldade, etc."
               value={newTraining.description || ''}
@@ -3472,7 +3472,7 @@ const App = () => {
 
             <form onSubmit={handleSaveProfessor} className="p-4 md:p-6 space-y-4 overflow-y-auto flex-1">
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">Email do Professor *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email do Professor *</label>
                 <input
                   required
                   type="email"

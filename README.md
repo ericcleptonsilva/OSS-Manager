@@ -11,7 +11,13 @@ O sistema passou por uma reformulação completa de segurança para garantir a p
 4.  **Limpeza de UI**: Interface refatorada para remover campos inseguros de entrada de senha em modais administrativos.
 5.  **Proteção contra Injeção**: Uso exclusivo do Parse SDK que sanitiza automaticamente as queries ao banco de dados.
 
-## 🛠️ Log de AlteraçõesRecentes (Abril 2024)
+## 🛠️ Log de Alterações Recentes (Maio 2026)
+
+### 📱 Melhorias de UI/UX e Mobile-First
+- **Modo Escuro (Dark Mode)**: Corrigido o contraste em todos os formulários e inputs. Anteriormente, as fontes e os fundos ficavam invisíveis no tema escuro. Agora utilizamos a paleta `slate` do Tailwind (`dark:bg-slate-800` e `dark:text-white`).
+- **Acessibilidade e Alvos de Toque (Touch Targets)**: Todos os campos de formulário (inputs e selects) tiveram sua altura e padding aumentados (`p-3` e `min-h-[48px]`) seguindo o padrão ouro de UX Mobile (Fitts' Law), evitando toques acidentais na tela.
+- **Rótulos (Labels)**: Cores ajustadas de `text-gray-900` chumbadas para classes dinâmicas (`text-slate-700 dark:text-slate-300`), garantindo legibilidade perfeita sem ofuscar no modo escuro.
+
 
 ### 1. Modernização UI/UX (Design Liquid Glass)
 - **Design System**: Implementação do sistema "Liquid Glass" (Glassmorphism 2.0) em todo o app.
