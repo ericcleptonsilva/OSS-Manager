@@ -161,6 +161,7 @@ export const fetchFullData = async (): Promise<AppData> => {
   try {
     // 1. Fetch Team (Singleton for this app mostly)
     const teamQuery = new Parse.Query('Team');
+    teamQuery.exclude('adminPassword'); // SECURITY: Prevent credential exposure
     const teamObj = await teamQuery.first();
     let team: Team;
 
@@ -180,6 +181,7 @@ export const fetchFullData = async (): Promise<AppData> => {
 
     // 2. Fetch Academies
     const academyQuery = new Parse.Query('Academy');
+    academyQuery.exclude('adminPassword'); // SECURITY: Prevent credential exposure
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapAcademy);
 
