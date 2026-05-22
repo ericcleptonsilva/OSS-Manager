@@ -161,6 +161,8 @@ export const fetchFullData = async (): Promise<AppData> => {
   try {
     // 1. Fetch Team (Singleton for this app mostly)
     const teamQuery = new Parse.Query('Team');
+    teamQuery.exclude('adminPassword');
+    teamQuery.exclude('adminEmail');
     const teamObj = await teamQuery.first();
     let team: Team;
 
@@ -180,6 +182,7 @@ export const fetchFullData = async (): Promise<AppData> => {
 
     // 2. Fetch Academies
     const academyQuery = new Parse.Query('Academy');
+    academyQuery.exclude('adminPassword');
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapAcademy);
 
@@ -269,6 +272,8 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
   try {
     // 1. Fetch Team
     const teamQuery = new Parse.Query('Team');
+    teamQuery.exclude('adminPassword');
+    teamQuery.exclude('adminEmail');
     const teamObj = await teamQuery.first();
     let team: Team;
 
@@ -288,6 +293,7 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
 
     // 2. Fetch Academies (Basic Info Only)
     const academyQuery = new Parse.Query('Academy');
+    academyQuery.exclude('adminPassword');
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapPublicAcademy);
 
