@@ -1,0 +1,4 @@
+## 2024-05-24 - Credentials Leak in Parse API Responses
+**Vulnerability:** The application was fetching `Team` and `Academy` objects using Parse SDK without excluding the sensitive `adminPassword` field. While the UI explicitly did not display or save the field to the local state, the backend (Back4App/Parse Server) still sent the field within the raw HTTP response payload, making credentials available to anyone using the browser's DevTools Network tab.
+**Learning:** Client-side mapping or hiding fields in memory does NOT prevent the actual data from being transmitted over the wire. Database queries must explicitly exclude sensitive fields before the query executes, enforcing a server-side filter.
+**Prevention:** Always use `.exclude()` on Parse queries to block sensitive credentials (like passwords) from reaching the client. Use server-side logs/payload inspections during development to verify what data is truly sent across the network.
