@@ -1,0 +1,5 @@
+
+## 2024-05-20 - Credential Exposure in Parse Queries
+**Vulnerability:** In `services/parseService.ts`, Parse queries (like `Team`, `Academy`, `Student`, `ProfessorAccount`) fetched the entire object model, exposing sensitive fields (`adminPassword`, `password`) to the client over the network. Additionally, `TrainingSession` queries brought the large `media` field, which was noted to cause 500 errors and bloat payloads.
+**Learning:** Parse queries default to returning all fields on an object unless explicitly limited. When fetching collections for frontend display, relying only on client-side mapping (like `mapPublicAcademy`) to hide fields is insufficient, as the raw network response still contains the sensitive payload. This is a common pattern in backend-as-a-service (BaaS) architectures.
+**Prevention:** Always use the `.exclude()` method on Parse queries to block sensitive credentials or excessively large payloads at the server level, ensuring they never reach the client's browser.
