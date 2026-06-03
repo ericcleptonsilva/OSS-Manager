@@ -1,0 +1,4 @@
+## 2024-05-24 - Privilege Escalation via Default Admin Fallback
+**Vulnerability:** The application state, authentication callbacks, and logout process defaulted to the 'admin' role if no explicit role could be determined or when resetting the UI state.
+**Learning:** Hardcoding administrative roles as a fallback or default initial state inherently risks unauthorized users gaining unintended privileges when logical flaws or missing fields (like standard Parse Users lacking a role column) are encountered.
+**Prevention:** Always follow the Principle of Least Privilege. Implement the lowest possible privilege (e.g., 'student' or 'guest') as the absolute fallback for unauthenticated states, unhandled exceptions, and absent role declarations.
