@@ -1,0 +1,5 @@
+
+## 2024-05-28 - Preventing Credential Leakage via Parse Queries
+**Vulnerability:** The Parse queries in `services/parseService.ts` (`fetchFullData` and `fetchPublicData`) for the `Team` and `Academy` collections were retrieving the full documents, which included the sensitive `adminPassword` field. Although the client-side mappers (e.g., `mapAcademy`) explicitly omitted this field when transforming the data, the raw network response from the Parse Server still contained the plaintext passwords, exposing them to any user inspecting the network traffic.
+**Learning:** Client-side data transformation (mapping out sensitive fields) does not provide security against data exposure over the network. The backend/database query itself must be restricted from returning the sensitive data in the first place.
+**Prevention:** Always use `.exclude('sensitiveFieldName')` directly on the `Parse.Query` object before execution to ensure that sensitive fields are never included in the raw network payload sent to the client.
