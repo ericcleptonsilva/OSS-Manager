@@ -1,0 +1,4 @@
+## 2024-05-24 - Prevent Client-Side Data Leakage via Parse Query Exclusion
+**Vulnerability:** Sensitive fields (like `adminPassword`, `adminEmail`, and `allowedEmails`) were being retrieved by the Parse JavaScript client during `fetchFullData` and `fetchPublicData` operations, and then merely scrubbed in client-side mapper functions (e.g., `mapAcademy`). This leaked sensitive data over the network to any user inspecting their browser's network tab.
+**Learning:** Client-side scrubbing (e.g., setting `adminPassword: ''` in a mapper) is a common but dangerous anti-pattern in Parse/Firebase applications. It provides false security because the raw payload is fully transmitted over the wire before the scrubbing code executes.
+**Prevention:** Always use `.exclude('field')` on the `Parse.Query` object before calling `.find()` or `.first()` to ensure the Parse Server never includes the sensitive fields in the response payload.
