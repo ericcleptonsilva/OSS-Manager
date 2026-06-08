@@ -1,0 +1,4 @@
+## 2024-05-18 - Prevent Admin Password Leakage in Public APIs
+**Vulnerability:** The application was fetching `Team` and `Academy` records using `Parse.Query` without excluding the `adminPassword` field. Although the UI mapper functions hid these fields from the client-side UI, the raw Parse Server response still transmitted the credentials over the network.
+**Learning:** Using client-side mapper functions (like `mapAcademy`) is insufficient for data security. The Parse Server automatically sends all retrieved fields unless explicitly excluded, leading to an Insecure Direct Object Reference (IDOR) / data exposure over the wire.
+**Prevention:** Always use `.exclude('sensitiveField')` directly on `Parse.Query` instances for any data fetched from the backend that contains sensitive information, ensuring the server never transmits it in the first place.
