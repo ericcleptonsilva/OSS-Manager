@@ -1,0 +1,4 @@
+## 2025-03-05 - [Critical Data Exposure Fix in API Payloads]
+**Vulnerability:** The Parse backend fetched full `Team` and `Academy` records to construct client objects, but the `adminPassword` properties inside these classes were being returned to the client browser in the raw network payload, even though they were mapped out later. This effectively leaked admin passwords in the network tab.
+**Learning:** Mapping properties correctly on the client side (`mapAcademy` function) doesn't prevent data over-fetching. By the time the JavaScript code executes `obj.get('name')`, the entire object including sensitive credentials is fundamentally already in the user's browser.
+**Prevention:** Data projection exclusions MUST happen strictly on the database query before the payload is delivered. Always apply `.exclude('sensitiveField')` or use explicit server-side `.select()` on Parse Queries to ensure sensitive properties are physically stripped from the network response.
