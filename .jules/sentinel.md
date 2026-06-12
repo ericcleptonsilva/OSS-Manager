@@ -1,0 +1,4 @@
+## 2026-06-12 - [Secure Defaults and Credential Redaction]
+**Vulnerability:** Default initial state roles were set to 'admin', and fallback logic defaulted to 'admin' when the user role was undefined, creating a significant risk of privilege escalation. Additionally, queries for 'Team' and 'Academy' models were pulling down sensitive 'adminPassword' fields into the client bundle payload.
+**Learning:** Relying on default 'admin' falls violates the principle of least privilege. Furthermore, removing credentials in client-side mapping functions is insufficient because the raw network response still contains the exposed secrets.
+**Prevention:** Set all fallback/default UI role states to 'student' (the lowest privilege). For credentials stored on the server, enforce `.exclude('sensitive_field')` directly on the Parse Server query to prevent transmission.
