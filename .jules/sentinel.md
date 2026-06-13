@@ -1,0 +1,4 @@
+## 2024-05-18 - Fix Data Exposure in Client Payload
+**Vulnerability:** The application was exposing sensitive credential fields (`adminPassword`) on the `Team` and `Academy` collections within client payloads (like those returned by `fetchFullData` and `fetchPublicData`) because they were not explicitly excluded in the queries.
+**Learning:** Removing sensitive fields in client-side mapper functions (e.g., `mapAcademy`) is insufficient, as the raw payload containing sensitive fields is still sent over the network from the server to the client.
+**Prevention:** Sensitive fields that are proven to exist on Parse objects must be explicitly excluded from Parse Server queries using `.exclude()` on the `Parse.Query` object before returning results to prevent critical credential exposure over the network.
