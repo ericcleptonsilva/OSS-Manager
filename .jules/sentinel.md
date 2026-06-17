@@ -1,0 +1,4 @@
+## 2025-03-09 - Over-fetching sensitive credentials in Parse queries
+**Vulnerability:** The queries for `Team` and `Academy` models in `fetchFullData` and `fetchPublicData` were fetching all fields by default, which included sensitive credentials like `adminPassword` and `adminEmail` that could be exposed over the network, even if filtered client-side.
+**Learning:** Default object retrieval queries in BaaS tools like Parse return all fields by default. Relying on frontend mapping/filtering (e.g., removing fields in TypeScript mapper functions) doesn't prevent the raw data payload containing sensitive information from being sent to the client browser via the API response.
+**Prevention:** Always use `.exclude()` at the query level (e.g., `query.exclude('adminPassword')`) when fetching records from collections that may contain sensitive administrative properties, so that the fields are stripped before they leave the server.
