@@ -161,6 +161,7 @@ export const fetchFullData = async (): Promise<AppData> => {
   try {
     // 1. Fetch Team (Singleton for this app mostly)
     const teamQuery = new Parse.Query('Team');
+    teamQuery.exclude('adminPassword', 'adminEmail');
     const teamObj = await teamQuery.first();
     let team: Team;
 
@@ -180,6 +181,7 @@ export const fetchFullData = async (): Promise<AppData> => {
 
     // 2. Fetch Academies
     const academyQuery = new Parse.Query('Academy');
+    academyQuery.exclude('adminPassword');
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapAcademy);
 
@@ -269,6 +271,7 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
   try {
     // 1. Fetch Team
     const teamQuery = new Parse.Query('Team');
+    teamQuery.exclude('adminPassword', 'adminEmail');
     const teamObj = await teamQuery.first();
     let team: Team;
 
@@ -288,6 +291,7 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
 
     // 2. Fetch Academies (Basic Info Only)
     const academyQuery = new Parse.Query('Academy');
+    academyQuery.exclude('adminPassword');
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapPublicAcademy);
 
@@ -511,20 +515,18 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
       }
 
       // 2. Verifica se é Admin de Equipe (Global)
-      // SECURITY: Sem fallback hardcoded — credenciais devem estar no banco de dados.
-      const teamQuery = new Parse.Query('Team');
-      const team = await teamQuery.first();
-      if (team) {
-        const storedAdminEmail = (team.get('adminEmail') || '').trim().toLowerCase();
-        const storedAdminPass = team.get('adminPassword') || '';
+      // SECURITY: Somente compara se AMBAS as credenciais armazenadas são não-vazias.
+      if (normalizedEmail.length > 0 && pass.length > 0) {
+        // SECURITY: Sem fallback hardcoded — credenciais devem estar no banco de dados.
+        const teamQuery = new Parse.Query('Team');
+        teamQuery.equalTo('adminPassword', pass);
+        teamQuery.exclude('adminPassword'); // Não excluir adminEmail, pois ele é comparado localmente abaixo
+        // Usamos find() em vez de first() para podermos fazer o trim() e toLowerCase() no email do lado do cliente
+        // pois o equalTo() do Parse é case-sensitive.
+        const teams = await teamQuery.find();
+        const team = teams.find(t => (t.get('adminEmail') || '').trim().toLowerCase() === normalizedEmail);
         
-        // SECURITY: Somente compara se AMBAS as credenciais armazenadas são não-vazias.
-        if (
-          storedAdminEmail.length > 0 &&
-          storedAdminPass.length > 0 &&
-          normalizedEmail === storedAdminEmail &&
-          pass === storedAdminPass
-        ) {
+        if (team) {
           const mockAdmin = new Parse.User();
           mockAdmin.id = 'legacy-admin';
           mockAdmin.set('email', normalizedEmail);
@@ -532,18 +534,16 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
           mockAdmin.set('role', 'admin');
           return mockAdmin;
         }
-      }
 
-      // 3. Verifica se é Professor de Academia (Específico)
-      const academyQuery = new Parse.Query('Academy');
-      // No Parse, equalTo em array verifica se o valor está PRESENTE no array
-      academyQuery.equalTo('allowedEmails', normalizedEmail);
-      const academy = await academyQuery.first();
-      
-      if (academy) {
-        const storedProfPass = (academy.get('adminPassword') || '') as string;
-        // SECURITY: Somente compara se a senha armazenada é não-vazia.
-        if (storedProfPass.length > 0 && storedProfPass === pass) {
+        // 3. Verifica se é Professor de Academia (Específico)
+        const academyQuery = new Parse.Query('Academy');
+        // No Parse, equalTo em array verifica se o valor está PRESENTE no array
+        academyQuery.equalTo('allowedEmails', normalizedEmail);
+        academyQuery.equalTo('adminPassword', pass);
+        academyQuery.exclude('adminPassword');
+        const academy = await academyQuery.first();
+
+        if (academy) {
           const mockProf = new Parse.User();
           mockProf.id = 'legacy-prof-' + academy.id;
           mockProf.set('email', normalizedEmail);
