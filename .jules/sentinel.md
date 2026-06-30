@@ -1,0 +1,4 @@
+## 2024-03-20 - [Data Leakage via Unfiltered Parse Queries]
+**Vulnerability:** The application was fetching entire `Team` and `Academy` records using `Parse.Query` without filtering out sensitive credential fields like `adminPassword`. Even though these fields were omitted from the UI mappers (`mapAcademy`), they were still sent in plaintext over the network, exposing them to anyone inspecting the network traffic.
+**Learning:** Removing sensitive fields in client-side mapper functions does not prevent data exposure, as the raw payload is still transmitted by the Parse Server.
+**Prevention:** Always apply `.exclude('sensitiveField')` directly to the `Parse.Query` to prevent the server from sending the data in the first place. Push credential validation (like password checks) to the database using `.equalTo('password', pass)` instead of validating in-memory on the client.
