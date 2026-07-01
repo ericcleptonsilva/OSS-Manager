@@ -126,7 +126,8 @@ const App = () => {
       const email = currentUser.get('email') || '';
       let role = currentUser.get('role') as UserRole;
       if (!role) {
-        role = 'admin';
+        // Default to student role for least privilege
+        role = 'student';
       }
       checkUserRoleAndLoadData(email, role);
     } else {
@@ -246,8 +247,8 @@ const App = () => {
 
       let role = user.get('role') as UserRole;
       if (!role) {
-        // If no role field (Standard Parse User), assume Admin
-        role = 'admin';
+        // Default to student role for least privilege
+        role = 'student';
       }
 
       // Persist session locally for non-Parse users (Mock users)
