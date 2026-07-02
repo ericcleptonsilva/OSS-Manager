@@ -1,0 +1,4 @@
+## 2024-07-02 - [Privilege Escalation via Default Admin Role]
+**Vulnerability:** The `userRole` state and various authentication fallback paths in `App.tsx` were hardcoded to default to the `admin` role when a role was missing or during initial rendering. This meant any user without an explicit role assigned could gain full global admin permissions simply by logging in.
+**Learning:** Defaulting to a high-privilege role is a dangerous pattern. When a user logs in but the application fails to fetch their role or if the user record lacks one, assigning them `admin` creates an immediate authorization bypass risk.
+**Prevention:** Always default to the least privileged role (e.g., `student`). Ensure that high privileges like `admin` are exclusively assigned when explicitly validated against known, secure server-side role structures.
