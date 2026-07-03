@@ -160,7 +160,7 @@ export const seedInitialData = async () => {
 export const fetchFullData = async (): Promise<AppData> => {
   try {
     // 1. Fetch Team (Singleton for this app mostly)
-    const teamQuery = new Parse.Query('Team');
+    const teamQuery = new Parse.Query('Team').exclude('adminPassword', 'adminEmail');
     const teamObj = await teamQuery.first();
     let team: Team;
 
@@ -179,7 +179,7 @@ export const fetchFullData = async (): Promise<AppData> => {
     }
 
     // 2. Fetch Academies
-    const academyQuery = new Parse.Query('Academy');
+    const academyQuery = new Parse.Query('Academy').exclude('adminPassword');
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapAcademy);
 
@@ -268,7 +268,7 @@ export const fetchFullData = async (): Promise<AppData> => {
 export const fetchPublicData = async (): Promise<{ team: Team, academies: Academy[] }> => {
   try {
     // 1. Fetch Team
-    const teamQuery = new Parse.Query('Team');
+    const teamQuery = new Parse.Query('Team').exclude('adminPassword', 'adminEmail');
     const teamObj = await teamQuery.first();
     let team: Team;
 
@@ -287,7 +287,7 @@ export const fetchPublicData = async (): Promise<{ team: Team, academies: Academ
     }
 
     // 2. Fetch Academies (Basic Info Only)
-    const academyQuery = new Parse.Query('Academy');
+    const academyQuery = new Parse.Query('Academy').exclude('adminPassword');
     const academyObjs = await academyQuery.find();
     const academies = academyObjs.map(mapPublicAcademy);
 
