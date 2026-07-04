@@ -1,0 +1,5 @@
+
+## 2024-05-18 - Prevent Credential Exposure in Parse Payloads and Client-Side Queries
+**Vulnerability:** The application was vulnerable to data exposure as sensitive fields like `adminPassword` and `adminEmail` were included in payloads when fetching `Team` and `Academy` objects (`fetchFullData`, `fetchPublicData`). Furthermore, the custom authentication flow (`performCustomLogin`) fetched entire records to the client-side to verify credentials.
+**Learning:** Even if mapper functions remove sensitive data from objects *after* fetching them, the raw Parse payload sent over the network still contains those fields. Password verification must occur at the database query level to be secure. Case-insensitive email checking requires fetching the email to the client, but the password field can and should be excluded.
+**Prevention:** Always push exact matching (like passwords) to the server via `.equalTo()` constraints. Explicitly strip sensitive fields from returned payloads using `.exclude('adminPassword', ...)` on every public or semi-public data query, ensuring they never reach the client's network layer.
