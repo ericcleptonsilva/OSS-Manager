@@ -1,0 +1,4 @@
+## 2024-05-24 - Secure Credential Handling in Parse Queries
+**Vulnerability:** The application was vulnerable to data exposure as sensitive fields like admin passwords were included in network payloads during `fetchFullData`, `fetchPublicData`, and client-side legacy authentication checks (`performCustomLogin`).
+**Learning:** Removing sensitive fields in client-side mapper functions does not prevent data exposure, as the raw payload is still sent over the network. Password filtering must happen on the database query level using `.equalTo('adminPassword', pass)` and explicitly excluded from payloads via `.exclude('adminPassword')`.
+**Prevention:** Always apply `.exclude()` directly to the `Parse.Query` for sensitive credentials before executing the query. Push verification for secure exact matches (like passwords) to the database level rather than fetching them to perform client-side string comparisons.
