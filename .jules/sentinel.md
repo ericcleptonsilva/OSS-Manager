@@ -1,0 +1,4 @@
+## 2025-02-24 - Secure Password Handling in Parse Queries
+**Vulnerability:** The application was fetching plain-text passwords (`adminPassword`) from the database (via Parse Server queries) and sending them back to the client. The authentication validation was happening client-side, exposing the passwords over the network.
+**Learning:** In systems like Parse Server, unless explicitly told to exclude fields, all data in a queried document is sent to the client. Filtering must happen server-side before transmission.
+**Prevention:** Always push password or credential validation directly into the database query (`equalTo('passwordField', pass)`) and explicitly omit sensitive fields using `exclude('passwordField')` to ensure they are never transmitted in network payloads. Additionally, always explicitly check that the submitted credentials are not empty or null prior to querying the database.
