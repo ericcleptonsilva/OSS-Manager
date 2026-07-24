@@ -11,7 +11,19 @@ O sistema passou por uma reformulação completa de segurança para garantir a p
 4.  **Limpeza de UI**: Interface refatorada para remover campos inseguros de entrada de senha em modais administrativos.
 5.  **Proteção contra Injeção**: Uso exclusivo do Parse SDK que sanitiza automaticamente as queries ao banco de dados.
 
-## 🛠️ Log de Alterações Recentes (Maio 2026)
+## 🛠️ Log de Alterações Recentes (Julho 2026)
+
+### 📋 Mapeamento de Contexto, Benchmark & Roadmap de Evolução
+- **Arquivo de Contexto (`PROJECT_CONTEXT.md`)**: Criado arquivo de contexto estruturado contendo a arquitetura completa, stack técnica, modelo de dados das classes Back4App (`Team`, `Academy`, `Student`, `ProfessorAccount`, `TrainingSession`, `FinancialTransaction`), regras de RBAC e mapa do projeto para acelerar o desenvolvimento sem consumo excessivo de tokens.
+- **Análise Competitiva & Repositórios GitHub**: Realizada pesquisa detalhada de soluções similares no GitHub (ex: *Obikai*, *Dojo Plugin*, *BJJ Journey*, *BJJ Scoreboard*) e softwares SaaS de mercado (ex: *Mat Track*, *GymDesk*, *PushPress*).
+- **Roadmap de Melhorias Identificadas**: Mapeadas 4 frentes prioritárias de evolução:
+  1. Refatoração modular de `App.tsx` em sub-views e custom hooks.
+  2. Motor de sugestão automática de graduação por tempo e contagem de treinos.
+  3. Notificações/Lembretes de mensalidade via WhatsApp.
+  4. Timer de rólis e cronômetro de tatame integrado.
+- **Memória de Projeto (`MEMORY.md`)**: Atualizado arquivo de memória contínuo.
+
+## 🛠️ Log de Alterações Anteriores (Maio 2026)
 
 ### 📱 Melhorias de UI/UX e Mobile-First
 - **Modo Escuro (Dark Mode)**: Corrigido o contraste em todos os formulários e inputs. Anteriormente, as fontes e os fundos ficavam invisíveis no tema escuro. Agora utilizamos a paleta `slate` do Tailwind (`dark:bg-slate-800` e `dark:text-white`).
