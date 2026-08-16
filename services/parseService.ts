@@ -480,82 +480,28 @@ export const performCustomLogin = async (email: string, pass: string): Promise<P
   const normalizedEmail = email.trim().toLowerCase();
 
   try {
-    // 1. Tenta Login Padrão do Parse (Recomendado/Moderno)
-    try {
-      const user = await Parse.User.logIn(normalizedEmail, pass);
-      
-      let role = user.get('role') as string | undefined;
-      if (!role) {
-        try {
-          const roleQuery = new Parse.Query(Parse.Role);
-          roleQuery.equalTo('users', user);
-          const roles = await roleQuery.find();
-          if (roles.length > 0) {
-            const roleName = roles[0].get('name').toLowerCase();
-            if (roleName.includes('admin')) role = 'admin';
-            else if (roleName.includes('prof')) role = 'professor';
-            else role = 'student';
-          }
-        } catch {
-          role = 'student';
+    // Autenticação Nativa Parse.User (Bcrypt/Argon2 + SessionToken no servidor)
+    const user = await Parse.User.logIn(normalizedEmail, pass);
+    
+    let role = user.get('role') as string | undefined;
+    if (!role) {
+      try {
+        const roleQuery = new Parse.Query(Parse.Role);
+        roleQuery.equalTo('users', user);
+        const roles = await roleQuery.find();
+        if (roles.length > 0) {
+          const roleName = roles[0].get('name').toLowerCase();
+          if (roleName.includes('admin')) role = 'admin';
+          else if (roleName.includes('prof')) role = 'professor';
+          else role = 'student';
         }
+      } catch {
+        role = 'student';
       }
-      
-      user.set('role', role || 'student');
-      return user;
-    } catch (e: any) {
-      // Se falhou o login nativo, tentamos as credenciais "virtuais" legado (Team/Academy)
-      // SECURITY: Não logar detalhes do fluxo de autenticação em produção.
-      if (import.meta.env.DEV) {
-        console.log('[Auth] Tentando credenciais legadas...');
-      }
-
-      // 2. Verifica se é Admin de Equipe (Global)
-      // SECURITY: Sem fallback hardcoded — credenciais devem estar no banco de dados.
-      const teamQuery = new Parse.Query('Team');
-      const team = await teamQuery.first();
-      if (team) {
-        const storedAdminEmail = (team.get('adminEmail') || '').trim().toLowerCase();
-        const storedAdminPass = team.get('adminPassword') || '';
-        
-        // SECURITY: Somente compara se AMBAS as credenciais armazenadas são não-vazias.
-        if (
-          storedAdminEmail.length > 0 &&
-          storedAdminPass.length > 0 &&
-          normalizedEmail === storedAdminEmail &&
-          pass === storedAdminPass
-        ) {
-          const mockAdmin = new Parse.User();
-          mockAdmin.id = 'legacy-admin';
-          mockAdmin.set('email', normalizedEmail);
-          mockAdmin.set('name', 'Team Admin');
-          mockAdmin.set('role', 'admin');
-          return mockAdmin;
-        }
-      }
-
-      // 3. Verifica se é Professor de Academia (Específico)
-      const academyQuery = new Parse.Query('Academy');
-      // No Parse, equalTo em array verifica se o valor está PRESENTE no array
-      academyQuery.equalTo('allowedEmails', normalizedEmail);
-      const academy = await academyQuery.first();
-      
-      if (academy) {
-        const storedProfPass = (academy.get('adminPassword') || '') as string;
-        // SECURITY: Somente compara se a senha armazenada é não-vazia.
-        if (storedProfPass.length > 0 && storedProfPass === pass) {
-          const mockProf = new Parse.User();
-          mockProf.id = 'legacy-prof-' + academy.id;
-          mockProf.set('email', normalizedEmail);
-          mockProf.set('name', academy.get('instructorName') || 'Professor');
-          mockProf.set('role', 'professor');
-          return mockProf;
-        }
-      }
-
-      // Se nada acima funcionou, relança o erro original
-      throw e;
     }
+    
+    user.set('role', role || 'student');
+    return user;
   } catch (error) {
     throw error;
   }

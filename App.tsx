@@ -126,17 +126,12 @@ const App = () => {
       const email = currentUser.get('email') || '';
       let role = currentUser.get('role') as UserRole;
       if (!role) {
-        role = 'admin';
+        role = 'student';
       }
       checkUserRoleAndLoadData(email, role);
     } else {
-      // Check local custom session
-      const storedSession = localStorage.getItem('oss_custom_session');
-      if (storedSession) {
-        const session = JSON.parse(storedSession);
-        setIsAuthenticated(true);
-        checkUserRoleAndLoadData(session.email, session.role);
-      }
+      // Limpeza defensiva de chave de sessão insegura legada
+      localStorage.removeItem('oss_custom_session');
     }
   }, []);
 
@@ -246,17 +241,8 @@ const App = () => {
 
       let role = user.get('role') as UserRole;
       if (!role) {
-        // If no role field (Standard Parse User), assume Admin
-        role = 'admin';
-      }
-
-      // Persist session locally for non-Parse users (Mock users)
-      if (!user.getSessionToken()) {
-        localStorage.setItem('oss_custom_session', JSON.stringify({
-          email: user.get('email'),
-          role: role,
-          userId: user.id
-        }));
+        // Default role fallback if missing
+        role = 'student';
       }
 
       const freshData = await checkUserRoleAndLoadData(loginEmail, role);
@@ -309,12 +295,6 @@ const App = () => {
       const user = await ParseService.registerUser(registerName, loginEmail, loginPassword);
       showNotification('Conta criada com sucesso! Bem-vindo.');
 
-      localStorage.setItem('oss_custom_session', JSON.stringify({
-        email: user.get('email'),
-        role: 'student',
-        userId: user.id
-      }));
-
       setIsAuthenticated(true);
       setUserRole('student');
       setCurrentUserId(user.id);
@@ -341,9 +321,9 @@ const App = () => {
 
   const handleLogout = async () => {
     await ParseService.logoutUser();
-    localStorage.removeItem('oss_custom_session'); // Clear custom session
+    localStorage.removeItem('oss_custom_session'); // Limpeza defensiva
     setIsAuthenticated(false);
-    setUserRole('admin');
+    setUserRole('student');
     setCurrentUserId(null);
     setSelectedAcademyId(null);
     setSelectedStudentId(null);

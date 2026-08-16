@@ -11,7 +11,14 @@ O sistema passou por uma reformulação completa de segurança para garantir a p
 4.  **Limpeza de UI**: Interface refatorada para remover campos inseguros de entrada de senha em modais administrativos.
 5.  **Proteção contra Injeção**: Uso exclusivo do Parse SDK que sanitiza automaticamente as queries ao banco de dados.
 
-## 🛠️ Log de Alterações Recentes (Julho 2026)
+## 🛠️ Log de Alterações Recentes (Agosto 2026)
+
+### 🛡️ Correção Completa de Vulnerabilidades & Hardening de Autenticação
+- **Remoção de Sessão Insegura no LocalStorage**: Eliminada a persistência de papel de usuário (`role`) e credenciais virtuais na chave `oss_custom_session` do `localStorage`. A validação de sessão agora depende **exclusivamente** da checagem do token de sessão criptográfico retornado pelo `Parse.User.current()`.
+- **Descontinuação de Mock Users Legados**: Removido o fluxo de fallback em `performCustomLogin` que validava senhas contra os campos `adminPassword` das tabelas `Team` e `Academy`. O login agora utiliza unicamente a API nativa `Parse.User.logIn()` (hashing seguro via servidor).
+- **Proteção do Papel do Usuário (RBAC)**: O papel (`userRole`) é atribuído no frontend com base na role autenticada pelo Parse Server no login, prevenindo adulteração via DevTools do navegador.
+
+## 🛠️ Log de Alterações Anteriores (Julho 2026)
 
 ### 📋 Mapeamento de Contexto, Benchmark & Roadmap de Evolução
 - **Arquivo de Contexto (`PROJECT_CONTEXT.md`)**: Criado arquivo de contexto estruturado contendo a arquitetura completa, stack técnica, modelo de dados das classes Back4App (`Team`, `Academy`, `Student`, `ProfessorAccount`, `TrainingSession`, `FinancialTransaction`), regras de RBAC e mapa do projeto para acelerar o desenvolvimento sem consumo excessivo de tokens.
