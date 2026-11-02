@@ -204,6 +204,18 @@ Acesse: **Back4App Dashboard → Database → [Classe] → Class Level Permissio
 - **Botão Novo Professor**: Implementado atalho direto para cadastrar novos instrutores vinculados a unidades.
 
 ### Interface (UI/UX)
+- **Evolução Antigravity Liquid Glass 2.0 & Mobile-First (Novembro 2026)**:
+  - **Issues no GitHub**: #192, #193 e #194 resolvidas e fechadas.
+  - **Ergonomia Tátil para Celular**: Implementada classe utilitária `.touch-target` com tamanho mínimo de 44x44px a 48x48px (padrão WCAG e Apple HIG/Android Material) para todos os botões interativos e atalhos de ação.
+  - **Acesso Direto sem Hover**: No smartphone não há hover com mouse. Todos os botões de ação (editar, excluir, atalhos) agora ficam acessíveis diretamente no mobile (`opacity-90 md:opacity-0 md:group-hover:opacity-100`).
+  - **Prevenção de Auto-Zoom no iOS Safari**: Adicionada regra CSS global que força `font-size: 16px` em `input`, `select` e `textarea` em telas `<= 768px`, eliminando o comportamento do iOS de dar zoom forçado e quebrar a interface ao digitar.
+  - **Tipografia Atlética & Alto Contraste**: Inclusão da fonte esportiva *Barlow Condensed* (`font-athletic`) combinada com a legibilidade da *Inter*.
+  - **Cards Reimaginados (`StudentCard`, `AcademyCard`, `TrainingCard`)**:
+    - `StudentCard`: Gradiente de faixa com ambient glow dinâmico de acordo com a cor da faixa (Branca, Azul, Roxa, Marrom, Preta), botões táteis e feedback háptico visual via `active:scale-95`.
+    - `AcademyCard`: Vidro especular (`.glass-specular`), tipografia de alto impacto e botões de atalho confortáveis para o polegar.
+    - `TrainingCard`: Bloco de data responsivo adaptado para orientação fluida em telas pequenas, tags de técnica de alto contraste e botões de ação ampliados.
+  - **Modais Mobile-First (`Modal.tsx`)**: Alvo de fechamento expandido para 44x44px, cantos arredondados modernos (`rounded-3xl`) e cabeçalho com tipografia esportiva.
+  - **Acessibilidade de Movimento**: Suporte total a `@media (prefers-reduced-motion: reduce)`.
 - **Correção de Ícone**: Corrigido o tamanho do ícone de lixeira (Limpar Histórico) no `StudentFinancialCard`, que estava distorcido e excessivamente grande na versão mobile/desktop, por herdar larguras `auto` e classes `full` dentro de uma tag em-linha. Foi definida a limitação de dimensões via Tailwind CSS `w-5 h-5` direto no SVG.
 - **Barra de Abas (Tabs)**: Substituída a rolagem horizontal por um layout em grade (`grid-cols-3`) para melhor navegação em dispositivos móveis e desktop.
 - **Botões Compactos**: Redimensionados os botões "Nova Academia" e "Matricular Aluno" para uma estética mais premium e equilibrada.

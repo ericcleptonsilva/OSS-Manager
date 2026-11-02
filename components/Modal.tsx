@@ -27,44 +27,51 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
     >
-      {/* Overlay */}
+      {/* Overlay backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-950/40 backdrop-blur-md transition-opacity duration-300"
+        className="absolute inset-0 bg-slate-950/60 backdrop-blur-md transition-opacity duration-300"
         onClick={onClose}
+        aria-hidden="true"
       />
       
       {/* Modal Container */}
       <div 
-        className={`relative w-full max-w-lg overflow-hidden transform transition-all duration-300 scale-100 shadow-2xl rounded-2xl border ${
+        className={`glass-specular relative w-full max-w-lg overflow-hidden transform transition-all duration-300 scale-100 shadow-2xl rounded-3xl border ${
           darkMode 
-            ? 'bg-slate-900/80 backdrop-blur-2xl border-white/10 text-white shadow-black/50' 
-            : 'bg-white/70 backdrop-blur-2xl border-slate-200/50 text-slate-900 shadow-slate-200/50'
+            ? 'bg-slate-900/90 backdrop-blur-2xl border-white/10 text-white shadow-black/60' 
+            : 'bg-white/90 backdrop-blur-2xl border-slate-200/80 text-slate-900 shadow-slate-300/40'
         }`}
       >
         <div 
-          className={`px-6 py-4 flex justify-between items-center border-b ${
-            darkMode ? 'border-white/5 bg-white/5' : 'border-slate-200/50 bg-slate-50/50'
+          className={`px-5 py-4 flex justify-between items-center border-b ${
+            darkMode ? 'border-white/10 bg-white/5' : 'border-slate-200/60 bg-slate-50/60'
           }`}
         >
-          <h3 className="text-xl font-bold tracking-tight">{title}</h3>
+          <h3 className="font-athletic text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white">
+            {title}
+          </h3>
           <button 
             onClick={onClose} 
-            className={`p-2 rounded-full transition-all duration-200 ${
+            className={`touch-target min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-all duration-200 active:scale-95 ${
               darkMode 
-                ? 'hover:bg-white/10 text-slate-400 hover:text-white' 
-                : 'hover:bg-slate-200 text-slate-500 hover:text-slate-900'
+                ? 'hover:bg-white/10 text-slate-400 hover:text-white active:bg-white/15' 
+                : 'hover:bg-slate-200/70 text-slate-500 hover:text-slate-900 active:bg-slate-300'
             }`}
+            aria-label="Fechar janela"
           >
             <IconX className="w-5 h-5" />
           </button>
         </div>
         
-        <div className="p-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
+        <div className="p-5 sm:p-6 max-h-[78vh] overflow-y-auto custom-scrollbar">
           {children}
         </div>
       </div>
     </div>
   );
-};
+};

@@ -19,11 +19,11 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
     --ring: 221 83% 53%;
-    --radius: 0.75rem;
+    --radius: 0.875rem;
   }
 
   .dark {
-    /* Dark Mode Tokens - Deep & Premium */
+    /* Dark Mode Tokens - Deep Obsidian & Glass */
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
     --card: 222 47% 8%;
@@ -41,45 +41,117 @@
   }
 
   body {
-    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))] antialiased transition-colors duration-300 font-sans;
+    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))] antialiased transition-colors duration-300 font-sans selection:bg-blue-500/20 selection:text-blue-500;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Previne zoom automático indesejado no iOS Safari ao focar inputs */
+  @media screen and (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
   }
 
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-gray-700 rounded-full hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors;
+    @apply bg-slate-300/60 dark:bg-slate-700/60 rounded-full hover:bg-slate-400 dark:hover:bg-slate-600 transition-colors;
   }
 }
 
 @layer utilities {
+  /* Liquid Glass 2.0 com Destaque Especular */
   .glass {
-    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-slate-700/30;
+    @apply bg-white/80 dark:bg-slate-900/75 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 shadow-lg;
   }
   
   .glass-card {
-    @apply bg-white/50 dark:bg-slate-900/50 backdrop-blur-lg border border-white/10 dark:border-slate-800/20 shadow-xl;
+    @apply bg-white/75 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-xl;
+  }
+
+  /* Antigravity Card: Efeito de gravidade zero e feedback tátil mobile */
+  .antigravity-card {
+    @apply relative overflow-hidden transition-all duration-300 ease-out will-change-transform active:scale-[0.98] select-none;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .antigravity-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.09), 0 0 20px rgba(37, 99, 235, 0.06);
+    }
+  }
+
+  /* Borda Especular Chanfrada (simulação de refração de cristal/acrílico) */
+  .glass-specular {
+    border-top: 1px solid rgba(255, 255, 255, 0.45);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .dark .glass-specular {
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+  }
+
+  /* Tipografia Atlética de Ação */
+  .font-athletic {
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  /* Alvo de toque ergonômico (Lei de Fitts para Mobile no Tatame) */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  @screen sm {
+    .touch-target {
+      min-height: 48px;
+    }
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 dark:from-blue-400 dark:via-indigo-300 dark:to-blue-500;
   }
 
   .premium-shadow {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.07), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
   }
 }
 
-/* Animations */
+/* Animations & Performance */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
 .animate-in {
-  animation: fadeIn 0.4s ease-out forwards;
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float {
+  animation: floatGentle 4s ease-in-out infinite;
+}
+
+/* Respeito a usuários sensíveis a movimento */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

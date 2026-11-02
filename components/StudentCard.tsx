@@ -1,4 +1,3 @@
-
 import React, { memo } from 'react';
 import { Student, BeltColor } from '../types';
 import { BELT_STYLES } from '../constants';
@@ -31,101 +30,152 @@ const StudentCard = memo(({
   const beltKey = Object.keys(BELT_STYLES).find(
     key => key.toLowerCase() === student.belt?.toLowerCase()
   ) as BeltColor || BeltColor.WHITE;
-  
+
   const style = BELT_STYLES[beltKey];
 
   return (
-    <div onClick={() => onOpenProfile(student.id)} className="flex glass-card animate-in rounded-2xl overflow-hidden group h-32 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
-      {/* Left: Photo/Belt (30%) */}
+    <div
+      onClick={() => onOpenProfile(student.id)}
+      className="flex antigravity-card glass-card glass-specular animate-in rounded-2xl overflow-hidden group min-h-[136px] h-auto sm:h-34 cursor-pointer relative"
+    >
+      {/* Halo de Cor da Faixa (Ambient Belt Glow no fundo do card) */}
       <div
-        className="w-[32%] flex items-center justify-center p-4 relative overflow-hidden shrink-0"
+        className="absolute -right-12 -top-12 w-32 h-32 rounded-full blur-3xl opacity-15 pointer-events-none transition-opacity duration-500 group-hover:opacity-30"
+        style={{ backgroundColor: style.solid }}
+      />
+
+      {/* Left: Photo / Belt Banner (28%–32%) */}
+      <div
+        className="w-[30%] sm:w-[28%] flex items-center justify-center p-3 sm:p-4 relative overflow-hidden shrink-0"
         style={{
-          background: `linear-gradient(135deg, ${style.background}, ${style.solid}11)`,
+          background: `linear-gradient(135deg, ${style.background}, ${style.solid}22)`,
         }}
       >
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
+        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
         {student.photo ? (
-          <div className="w-20 w-20 md:w-22 md:h-22 rounded-2xl overflow-hidden border border-white/40 shadow-2xl z-10 relative transition-all duration-700 group-hover:scale-105 group-hover:-rotate-2">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-white/60 shadow-xl z-10 relative transition-transform duration-500 group-hover:scale-105">
             <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
           </div>
         ) : (
-          <div className="w-20 h-20 md:w-22 md:h-22 rounded-2xl bg-white/10 backdrop-blur-xl flex items-center justify-center z-10 border border-white/20 shadow-2xl transition-all duration-700 group-hover:scale-105 group-hover:rotate-3">
-            <span className="text-4xl font-black text-white drop-shadow-2xl italic tracking-tighter">{student.name.charAt(0)}</span>
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center z-10 border-2 border-white/30 shadow-xl transition-transform duration-500 group-hover:scale-105">
+            <span className="text-3xl sm:text-4xl font-athletic text-white drop-shadow-md tracking-tighter">
+              {student.name.charAt(0)}
+            </span>
           </div>
         )}
-        
-        {/* Belt Indicator Blur */}
-        <div className="absolute -bottom-4 -left-4 w-12 h-12 rounded-full blur-2xl opacity-40 animate-pulse" style={{ backgroundColor: style.solid }}></div>
+
+        {/* Ambient Blur Indicator */}
+        <div
+          className="absolute -bottom-4 -left-4 w-14 h-14 rounded-full blur-xl opacity-40 animate-pulse pointer-events-none"
+          style={{ backgroundColor: style.solid }}
+        />
       </div>
 
-      {/* Middle: Info (58%) */}
-      <div className={`w-[58%] p-4 flex flex-col justify-between relative ${darkMode ? 'bg-jiu-surface' : 'bg-white'}`}>
+      {/* Middle: Info Content */}
+      <div className={`flex-1 p-3.5 sm:p-4 flex flex-col justify-between relative ${darkMode ? 'bg-slate-900/40' : 'bg-white/80'}`}>
         <div>
-          <div className="flex justify-between items-start">
-            <h4 className={`font-bold text-base truncate transition-colors pr-2 tracking-tight ${darkMode ? 'text-white group-hover:text-jiu-primary' : 'text-gray-900 group-hover:text-jiu-primary'}`} title={student.name}>{student.name}</h4>
+          <div className="flex justify-between items-start gap-1">
+            <h4
+              className={`font-athletic text-base sm:text-lg truncate pr-1 tracking-tight transition-colors ${
+                darkMode ? 'text-white group-hover:text-blue-400' : 'text-slate-900 group-hover:text-blue-600'
+              }`}
+              title={student.name}
+            >
+              {student.name}
+            </h4>
             {canEdit && (
-              <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center space-x-1 opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={(e) => { e.stopPropagation(); onEdit(student); }}
-                  className="text-gray-400 hover:text-jiu-primary transition-colors p-1.5 rounded-lg hover:bg-jiu-primary/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(student);
+                  }}
+                  className="text-slate-400 hover:text-blue-500 transition-colors p-2 rounded-xl hover:bg-blue-500/10 active:scale-95 touch-target flex items-center justify-center"
                   title="Editar Aluno"
+                  aria-label="Editar Aluno"
                 >
-                  <IconEdit className="w-3.5 h-3.5" />
+                  <IconEdit className="w-4 h-4" />
                 </button>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-lg border backdrop-blur-md shadow-sm transition-all" style={{ color: style.solid, borderColor: `${style.solid}33`, backgroundColor: `${style.solid}08` }}>
+
+          {/* Badges de Faixa e Débito */}
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+            <span
+              className="text-[10px] sm:text-[11px] font-athletic px-2.5 py-0.5 rounded-lg border backdrop-blur-md shadow-sm transition-all"
+              style={{
+                color: style.solid,
+                borderColor: `${style.solid}40`,
+                backgroundColor: `${style.solid}15`
+              }}
+            >
               {student.belt}
             </span>
             {hasOverdue && (
-              <span className="animate-pulse bg-red-500/10 text-red-500 border border-red-500/20 text-[8px] font-black px-2 py-0.5 rounded-lg flex items-center shadow-lg shadow-red-500/10 tracking-widest uppercase">
-                <IconAlert className="w-2.5 h-2.5 mr-1" /> DÉBITO
+              <span className="animate-pulse bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30 text-[9px] font-athletic px-2 py-0.5 rounded-lg flex items-center shadow-sm">
+                <IconAlert className="w-3 h-3 mr-1" /> DÉBITO
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-4 mt-3 opacity-60">
-            <div className="flex flex-col">
-              <span className="text-[8px] font-black uppercase tracking-widest opacity-50">Faltas</span>
-              <span className={`text-xs font-bold ${absences > 3 ? "text-red-500" : ""}`}>{absences}</span>
+          {/* Métricas Compactas */}
+          <div className="flex items-center gap-3 sm:gap-4 mt-2.5 text-slate-500 dark:text-slate-400 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] font-black uppercase tracking-wider opacity-60">Faltas:</span>
+              <span className={`font-bold ${absences > 3 ? 'text-red-500 font-extrabold' : ''}`}>{absences}</span>
             </div>
-            <div className="w-px h-4 bg-gray-200 dark:bg-white/10"></div>
-            <div className="flex flex-col">
-              <span className="text-[8px] font-black uppercase tracking-widest opacity-50">Status</span>
-              <span className="text-xs font-bold text-green-500">Ativo</span>
+            <div className="w-px h-3 bg-slate-300 dark:bg-white/10"></div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] font-black uppercase tracking-wider opacity-60">Status:</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">Ativo</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/5 pt-3">
-           <div className="flex flex-col">
-            <span className="text-[8px] text-gray-400 uppercase font-black tracking-widest opacity-40 leading-none mb-1">Ingresso</span>
-            <span className="text-[11px] font-black tracking-tighter opacity-80 leading-none">
+        {/* Rodapé do Card */}
+        <div className="flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-2 mt-2">
+          <div className="flex flex-col">
+            <span className="text-[9px] text-slate-400 uppercase font-black tracking-widest opacity-60 leading-none mb-0.5">
+              Matrícula
+            </span>
+            <span className="text-xs font-bold tracking-tight opacity-90 leading-none text-slate-700 dark:text-slate-300">
               {new Date(student.startDate).toLocaleDateString('pt-BR')}
             </span>
-           </div>
-           {canEdit && (
-             <button
-                onClick={(e) => { e.stopPropagation(); onDelete(student.id); }}
-                className="text-slate-300 hover:text-red-500 transition-all p-2 hover:bg-red-500/10 rounded-xl"
-                title="Excluir Aluno"
-              >
-                <IconTrash className="w-3.5 h-3.5" />
-              </button>
-           )}
+          </div>
+          {canEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(student.id);
+              }}
+              className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-xl hover:bg-red-500/10 active:scale-95 touch-target flex items-center justify-center opacity-90 md:opacity-0 md:group-hover:opacity-100"
+              title="Excluir Aluno"
+              aria-label="Excluir Aluno"
+            >
+              <IconTrash className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Right: Rank Bar (Black Bar for Stripes) (10%) */}
-      <div className="w-[10%] bg-zinc-950 flex flex-col-reverse items-center justify-center gap-1.5 py-3 shadow-inner" onClick={(e) => e.stopPropagation()}>
+      {/* Right: Ponteira de Graus (Black Bar for Stripes - Acessível ao toque no Mobile) */}
+      <div
+        className="w-11 sm:w-12 bg-zinc-950 flex flex-col-reverse items-center justify-around py-2.5 shrink-0 select-none border-l border-white/5"
+        onClick={(e) => e.stopPropagation()}
+      >
         {[1, 2, 3, 4].map(degree => (
-          <div
+          <button
             key={degree}
             onClick={() => canEdit && onUpdateDegree(student.id, degree)}
-            className={`w-5 h-1.5 rounded-full transition-all duration-300 border border-white/20 ${student.degrees && student.degrees >= degree ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,1)]' : 'bg-white/5 hover:bg-white/20'} ${canEdit ? 'cursor-pointer hover:scale-125' : 'cursor-default'}`}
-            title={canEdit ? `Grau ${degree}` : ''}
+            disabled={!canEdit}
+            className={`w-6 h-2 rounded-full transition-all duration-200 border border-white/20 touch-target flex items-center justify-center ${
+              student.degrees && student.degrees >= degree
+                ? 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)] scale-105'
+                : 'bg-white/10 hover:bg-white/25'
+            } ${canEdit ? 'cursor-pointer active:scale-125' : 'cursor-default'}`}
+            title={canEdit ? `Alternar Grau ${degree}` : `Grau ${degree}`}
+            aria-label={`Grau ${degree}`}
           />
         ))}
       </div>

@@ -9,6 +9,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        heading: ['"Barlow Condensed"', 'sans-serif'],
       },
       colors: {
         jiu: {

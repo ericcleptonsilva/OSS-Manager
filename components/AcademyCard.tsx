@@ -1,4 +1,3 @@
-
 import React, { memo } from 'react';
 import { Academy } from '../types';
 import { IconAcademy, IconClock } from './icons';
@@ -21,65 +20,89 @@ const AcademyCard = memo(({
   return (
     <div
       onClick={() => onClick(academy.id)}
-      className={`glass-card animate-in rounded-2xl p-6 cursor-pointer group relative overflow-hidden transition-all duration-300 hover:-translate-y-1`}
+      className="antigravity-card glass-card glass-specular animate-in rounded-2xl p-5 sm:p-6 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
     >
-      <div className="flex justify-between items-start mb-6 relative z-10">
-        <div className={`w-20 h-20 rounded-2xl border flex items-center justify-center overflow-hidden transition-all duration-700 group-hover:scale-105 group-hover:rotate-2 shadow-2xl backdrop-blur-xl relative
-          ${darkMode ? 'bg-white/5 border-white/10 shadow-black/40' : 'bg-white border-slate-100 shadow-slate-200/50'}
-        `}>
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>
-          {academy.logo ? (
-            <img src={academy.logo} alt={academy.name} className="w-full h-full object-contain p-2 relative z-10" />
-          ) : (
-            <IconAcademy className="w-10 h-10 text-slate-400 group-hover:text-jiu-primary transition-colors relative z-10" />
-          )}
-        </div>
-        {isAuthenticated && (
-          <div className="flex flex-col items-end gap-2">
-            <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-xl border backdrop-blur-2xl shadow-xl transition-all duration-300 group-hover:bg-jiu-primary group-hover:text-white group-hover:border-jiu-primary
-              ${darkMode ? 'bg-white/5 text-slate-400 border-white/10' : 'bg-white text-slate-500 border-slate-100'}
-            `}>
+      {/* Luz ambiente de profundidade */}
+      <div className="absolute -top-16 -right-16 w-36 h-36 rounded-full bg-blue-500/10 blur-3xl pointer-events-none group-hover:bg-blue-500/20 transition-all duration-500" />
+
+      <div>
+        <div className="flex justify-between items-start mb-5 relative z-10">
+          <div
+            className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl border flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-105 shadow-xl backdrop-blur-xl relative ${
+              darkMode ? 'bg-white/5 border-white/10 shadow-black/40' : 'bg-white border-slate-100 shadow-slate-200/50'
+            }`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>
+            {academy.logo ? (
+              <img src={academy.logo} alt={academy.name} className="w-full h-full object-contain p-2 relative z-10" />
+            ) : (
+              <IconAcademy className="w-9 h-9 text-slate-400 group-hover:text-blue-500 transition-colors relative z-10" />
+            )}
+          </div>
+
+          {isAuthenticated && (
+            <span
+              className={`text-[10px] font-athletic tracking-widest px-3 py-1.5 rounded-xl border backdrop-blur-md shadow-sm transition-all duration-300 ${
+                darkMode
+                  ? 'bg-white/5 text-slate-300 border-white/10 group-hover:border-blue-500/40'
+                  : 'bg-white text-slate-700 border-slate-200 group-hover:border-blue-500/40'
+              }`}
+            >
               {studentCount} {studentCount === 1 ? 'Aluno' : 'Alunos'}
             </span>
+          )}
+        </div>
+
+        <h3
+          className={`font-athletic text-2xl sm:text-3xl mb-1 relative z-10 tracking-tight transition-colors group-hover:text-blue-500 ${
+            darkMode ? 'text-white' : 'text-slate-900'
+          }`}
+        >
+          {academy.name}
+        </h3>
+
+        <div className={`text-xs mb-5 relative z-10 flex items-center font-bold uppercase tracking-wider opacity-65 ${
+          darkMode ? 'text-slate-400' : 'text-slate-500'
+        }`}>
+          <span className="w-2 h-2 rounded-full bg-blue-500 mr-2 animate-pulse shrink-0"></span>
+          <span className="truncate">{academy.address}</span>
+        </div>
+
+        {/* Grade de Horários */}
+        {academy.schedule && academy.schedule.length > 0 && (
+          <div
+            className={`p-4 rounded-xl mb-5 relative z-10 backdrop-blur-md shadow-inner border transition-all duration-300 ${
+              darkMode ? 'bg-white/5 border-white/5 text-slate-300' : 'bg-slate-50/80 border-slate-100 text-slate-700'
+            }`}
+          >
+            <p className="text-[10px] font-athletic tracking-widest mb-2.5 flex items-center opacity-70">
+              <IconClock className="w-3.5 h-3.5 mr-1.5 text-blue-500" /> Próximos Treinos
+            </p>
+            <div className="space-y-1.5">
+              {academy.schedule.slice(0, 3).map((s, idx) => (
+                <div key={idx} className="flex justify-between items-center text-[11px]">
+                  <span className="font-bold tracking-wider uppercase opacity-80">{s.day.split('-')[0]}</span>
+                  <span className="font-medium opacity-90 bg-white/10 px-2 py-0.5 rounded-md border border-white/10">
+                    {s.timeRanges.map(r => `${r.openTime}`).join(' • ')}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
-      
-      <h3 className={`text-2xl font-black mb-1 relative z-10 tracking-tighter uppercase italic transition-all duration-300 group-hover:translate-x-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{academy.name}</h3>
-      <div className={`text-xs mb-6 relative z-10 flex items-center font-bold uppercase tracking-widest opacity-60 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-        <span className="w-2 h-2 rounded-full bg-jiu-primary mr-2 animate-pulse"></span>
-        {academy.address}
-      </div>
 
-      {/* Schedule on Card */}
-      {academy.schedule && academy.schedule.length > 0 && (
-        <div className={`p-5 rounded-2xl mb-6 relative z-10 backdrop-blur-xl shadow-inner border transition-all duration-300 group-hover:bg-jiu-primary/5
-          ${darkMode ? 'bg-white/5 border-white/5 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-600'}
-        `}>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 flex items-center opacity-60">
-            <IconClock className="w-4 h-4 mr-2 text-jiu-primary" /> Próximos Treinos
-          </p>
-          <div className="space-y-2">
-            {academy.schedule.map((s, idx) => (
-              <div key={idx} className="flex justify-between items-center text-[11px]">
-                <span className="font-black uppercase tracking-wider">{s.day.split('-')[0]}</span>
-                <span className="font-bold opacity-80 bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
-                  {s.timeRanges.map(r => `${r.openTime}`).join(' • ')}
-                </span>
-              </div>
-            )).slice(0, 3)}
-          </div>
-        </div>
-      )}
-
-      <div className={`flex items-center justify-between border-t pt-6 relative z-10 ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
-        <div className="flex items-center group/instructor">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-jiu-primary to-blue-400 mr-3 flex items-center justify-center text-xs text-white font-black shadow-lg shadow-blue-500/20 transform transition-transform group-hover/instructor:scale-110">
+      {/* Footer com Instrutor e Botão Acessar (Otimizado para toque) */}
+      <div className={`flex items-center justify-between border-t pt-4 relative z-10 ${darkMode ? 'border-white/5' : 'border-slate-100'}`}>
+        <div className="flex items-center">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 mr-2.5 flex items-center justify-center text-xs text-white font-black shadow-md shadow-blue-500/20">
             {academy.instructorName?.charAt(0)}
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 leading-none mb-1">Mestre</span>
-            <span className="truncate max-w-[100px] text-xs font-bold tracking-tight leading-none">{academy.instructorName}</span>
+            <span className="text-[9px] font-black uppercase tracking-widest opacity-40 leading-none mb-0.5">Instrutor</span>
+            <span className="truncate max-w-[120px] text-xs font-bold tracking-tight leading-none text-slate-800 dark:text-slate-200">
+              {academy.instructorName}
+            </span>
           </div>
         </div>
 
@@ -89,10 +112,10 @@ const AcademyCard = memo(({
               e.stopPropagation();
               onClick(academy.id);
             }}
-            className="group/btn relative overflow-hidden px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all bg-jiu-primary text-white shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
+            className="touch-target px-5 py-2 rounded-xl text-xs font-athletic tracking-widest transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 active:scale-95 flex items-center justify-center"
+            aria-label={`Acessar ${academy.name}`}
           >
-            <span className="relative z-10">Acessar</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-transparent opacity-0 group-hover/btn:opacity-20 transition-opacity"></div>
+            Acessar
           </button>
         )}
       </div>
