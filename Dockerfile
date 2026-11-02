@@ -2,26 +2,26 @@ FROM node:20
 
 WORKDIR /app
 
-# 1. Instala dependências
+# 1. Instala dependencias
 COPY package*.json ./
 RUN npm install
 
-# 2. Copia o código e faz o build (Gera a pasta 'dist')
-# We need ARGs to receive the values from Cloud Build
+# 2. Copia o codigo e faz o build (Gera a pasta 'dist')
 ARG VITE_PARSE_APP_ID
 ARG VITE_PARSE_JS_KEY
-ARG GEMINI_API_KEY
 
-# Set them as ENV vars so Vite can embed them during build
 ENV VITE_PARSE_APP_ID=$VITE_PARSE_APP_ID
 ENV VITE_PARSE_JS_KEY=$VITE_PARSE_JS_KEY
-ENV GEMINI_API_KEY=$GEMINI_API_KEY
 
 COPY . .
 RUN npm run build
 
-# 3. Expõe a porta 8080 (Padrão do Google)
+# 3. Hardening de seguranca: Execucao com usuario nao-privilegiado (non-root)
+RUN chown -R node:node /app
+USER node
+
+# 4. Expoe a porta 8080 (Padrao do Cloud Run)
 EXPOSE 8080
 
-# 4. Inicia o servidor customizado com Node
+# 5. Inicia o servidor com Node
 CMD ["node", "server.js"]

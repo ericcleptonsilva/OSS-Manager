@@ -11,6 +11,31 @@ O sistema passou por uma reformulação completa de segurança para garantir a p
 4.  **Limpeza de UI**: Interface refatorada para remover campos inseguros de entrada de senha em modais administrativos.
 5.  **Proteção contra Injeção**: Uso exclusivo do Parse SDK que sanitiza automaticamente as queries ao banco de dados.
 
+## 🛠️ Log de Alterações Recentes (Novembro 2026)
+
+### 🔒 Auditoria Abrangente de Segurança (Workflow `/security-audit`)
+Foi realizada uma auditoria completa de segurança no repositório cobrindo SAST (Static Application Security Testing), análise de permissões RBAC, segurança de contêineres e dependências npm.
+
+#### 🎯 Issues Criadas e Solucionadas no GitHub:
+- **[#183](https://github.com/ericcleptonsilva/OSS-Manager/issues/183) — SEC-01: [CRITICAL] Escalação de privilégios via fallback arbitrário para admin em `App.tsx`**:
+  - *Problema*: `userRole` iniciava como `'admin'`. No método `checkUserRoleAndLoadData`, contas autenticadas não localizadas na lista de alunos eram arbitrariamente promovidas a `'admin'` por padrão.
+  - *Correção*: `userRole` passa a iniciar estritamente com `'student'` (menor privilégio). O fallback foi substituído por uma verificação restrita com `adminEmail` da equipe e lista de professores; contas comuns permanecem como `'student'` (Fail-Safe Defaults / OWASP A01).
+- **[#184](https://github.com/ericcleptonsilva/OSS-Manager/issues/184) — SEC-02: [HIGH] Resíduo de autorização via localStorage (`oss_custom_session`) em `App.tsx`**:
+  - *Problema*: Leitura residual da chave de sessão antiga `oss_custom_session` permitia potencial spoofing de autorização ao navegar em academias.
+  - *Correção*: Removida a dependência residual de localStorage. Verificação baseada exclusivamente em `ParseService.getCurrentUser()`.
+- **[#185](https://github.com/ericcleptonsilva/OSS-Manager/issues/185) — SEC-03: [HIGH] Exposição potencial de credencial `GEMINI_API_KEY` em bundle e metadados Docker**:
+  - *Problema*: `vite.config.ts` definia `process.env.GEMINI_API_KEY` para o bundle client-side, e `Dockerfile`/`cloudbuild.yaml` continham argumentos de build com a chave.
+  - *Correção*: Eliminadas as injeções desnecessárias. Toda chamada à IA do Gemini é executada em Cloud Code seguro no Back4App (`Parse.Cloud.run('analyzeTeam')`).
+- **[#186](https://github.com/ericcleptonsilva/OSS-Manager/issues/186) — SEC-04: [HIGH] Risco de DoS e exaustão de memória via upload irrestrito de mídias base64**:
+  - *Problema*: Falta de validação de tamanho e tipo MIME em `handleImageUpload`, gerando risco de travamento do browser (OOM) e estouro de limite de memória no MongoDB.
+  - *Correção*: Implementado limite de tamanho (5MB para imagens de perfil/logo/banner, 15MB e máx. 5 arquivos para treinos), validação de tipos MIME (`image/*` e `video/*`) e checagem defensiva de privilégios.
+- **[#187](https://github.com/ericcleptonsilva/OSS-Manager/issues/187) — SEC-05: [MEDIUM] Hardening do servidor Express, CSP e execução não-root no Dockerfile**:
+  - *Problema*: Servidor Express divulgava header `X-Powered-By`, CSP continha permissão ampla para Google APIs não mais consumido diretamente no client, e contêiner rodava como `root`.
+  - *Correção*: Configurado `app.disable('x-powered-by')`, CSP ajustado e contêiner configurado com `USER node`.
+- **[#188](https://github.com/ericcleptonsilva/OSS-Manager/issues/188) — SEC-06: [HIGH] Vulnerabilidades em dependências npm**:
+  - *Problema*: `npm audit` detectou 27 vulnerabilidades (incluindo crítica em `proxy-addr` e 11 de alta severidade). Polyfills do Vite carregavam `vm-browserify` com uso de `eval`.
+  - *Correção*: Executado `npm audit fix` (reduzindo vulnerabilidades de 27 para 10 sem breaking changes) e restritos polyfills do Vite (`['buffer', 'events', 'process']`), eliminando o uso de `eval` e reduzindo o tamanho do bundle JS de **1,95 MB para 1,01 MB** (-48%).
+
 ## 🛠️ Log de Alterações Recentes (Agosto 2026)
 
 ### 🛡️ Correção Completa de Vulnerabilidades & Hardening de Autenticação

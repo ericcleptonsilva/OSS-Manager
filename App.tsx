@@ -24,7 +24,7 @@ const App = () => {
 
   // 0. Auth State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [userRole, setUserRole] = useState<UserRole>('admin');
+  const [userRole, setUserRole] = useState<UserRole>('student');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isPublicDataLoaded, setIsPublicDataLoaded] = useState(false);
@@ -221,10 +221,21 @@ const App = () => {
         setSelectedStudentId(studentFound.id);
         showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
       } else {
-        // Fallback para admin caso não seja nada acima
-        setUserRole('admin');
-        setCurrentUserId(null);
-        showNotification(`Bem-vindo!`);
+        // Fallback defensivo e seguro (Fail-Safe Defaults / Least Privilege)
+        if (fetchedData.team.adminEmail && fetchedData.team.adminEmail.trim().toLowerCase() === normalizedEmail) {
+          setUserRole('admin');
+          setCurrentUserId(null);
+          showNotification(`Bem-vindo, Admin!`);
+        } else if (fetchedData.professors.some(p => p.email.trim().toLowerCase() === normalizedEmail)) {
+          setUserRole('professor');
+          setCurrentUserId(null);
+          showNotification(`Bem-vindo, Professor!`);
+        } else {
+          // Mantém estritamente como student (não eleva privilégios para admin sem autorização)
+          setUserRole('student');
+          setCurrentUserId(null);
+          showNotification(`Bem-vindo! Solicite ao seu professor a vinculação do perfil.`);
+        }
       }
     }
     return fetchedData;
@@ -388,8 +399,38 @@ const App = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    // Defesa em profundidade: autorização explícita para alteração de banner global
+    if (target === 'team-banner' && (!isAuthenticated || userRole !== 'admin')) {
+      showNotification('Apenas administradores podem alterar o banner da equipe.', 'error');
+      return;
+    }
+
+    const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+    const MAX_TRAINING_MEDIA_BYTES = 15 * 1024 * 1024; // 15MB
+    const MAX_TRAINING_FILES = 5;
+
     if (target === 'training') {
       const fileArray = Array.from(files);
+
+      if (fileArray.length > MAX_TRAINING_FILES) {
+        showNotification(`Selecione no máximo ${MAX_TRAINING_FILES} arquivos por vez.`, 'error');
+        return;
+      }
+
+      // Validação de tipo MIME e tamanho para cada arquivo de mídia de treino
+      for (const file of fileArray) {
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+        if (!isImage && !isVideo) {
+          showNotification(`Formato inválido (${file.name}). Apenas fotos e vídeos são permitidos.`, 'error');
+          return;
+        }
+        if (file.size > MAX_TRAINING_MEDIA_BYTES) {
+          showNotification(`O arquivo ${file.name} excede o limite máximo de 15MB.`, 'error');
+          return;
+        }
+      }
+
       const promises = fileArray.map((file: File) => {
         return new Promise<TrainingMedia>((resolve) => {
           const reader = new FileReader();
@@ -411,6 +452,18 @@ const App = () => {
 
     } else {
       const file = files[0];
+
+      // Validação estrita de tipo e tamanho para fotos e logos
+      if (!file.type.startsWith('image/')) {
+        showNotification('Formato de arquivo inválido. Apenas imagens são aceitas.', 'error');
+        return;
+      }
+
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        showNotification('A imagem selecionada excede o limite máximo de 5MB.', 'error');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = async () => {
         const result = reader.result as string;
@@ -424,7 +477,7 @@ const App = () => {
             setData(prev => ({ ...prev, team: updatedTeam }));
             showNotification('Banner atualizado!');
           } catch (e) {
-            alert("Erro ao salvar banner.");
+            showNotification('Erro ao salvar banner da equipe.', 'error');
           }
         } else if (target === 'academy') {
           setNewAcademy(prev => ({ ...prev, logo: result }));
@@ -713,13 +766,7 @@ const App = () => {
         return;
       }
       const currentUser = ParseService.getCurrentUser();
-      let currentUserEmail = currentUser?.get('email');
-      if (!currentUserEmail) {
-        const stored = localStorage.getItem('oss_custom_session');
-        if (stored) {
-          currentUserEmail = JSON.parse(stored).email;
-        }
-      }
+      const currentUserEmail = currentUser?.get('email') || currentUser?.get('username') || '';
       // SECURITY: "Deny by default" — professor precisa estar na lista allowedEmails.
       // Se a lista está vazia, somente admin pode acessar.
       const normalizedAllowed = (targetAcademy.allowedEmails || []).map(e => e.trim().toLowerCase());

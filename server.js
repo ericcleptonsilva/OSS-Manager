@@ -10,6 +10,9 @@ const distPath = join(__dirname, 'dist');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Oculta cabeçalho de tecnologia do Express (Evita Information Disclosure / Fingerprinting)
+app.disable('x-powered-by');
+
 // --- SECURITY HEADERS ---
 app.use((req, res, next) => {
   // Previne clickjacking
@@ -22,14 +25,15 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   // Restringe permissões do browser
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  // Content Security Policy
+  // Content Security Policy restrito
   res.setHeader('Content-Security-Policy', [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'", // unsafe-inline necessário para Vite bundled JS
+    "script-src 'self' 'unsafe-inline'", // necessário para Vite bundled JS
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
-    "connect-src 'self' https://parseapi.back4app.com https://generativelanguage.googleapis.com",
+    "media-src 'self' data: blob:",
+    "connect-src 'self' https://parseapi.back4app.com",
     "frame-ancestors 'none'"
   ].join('; '));
   next();
@@ -47,10 +51,7 @@ if (fs.existsSync(distPath)) {
         res.sendFile(join(distPath, 'index.html'));
     });
 } else {
-    // SE O BUILD FALHOU, O SERVER SOBE COM UMA MENSAGEM DE ERRO
-    // Isso evita o crash do Cloud Run e permite você ler o erro na tela.
     console.error("ERRO CRÍTICO: Pasta dist não existe!");
-    // Express 5 requires regex for catch-all routes instead of string '*'
     app.get(/.*/, (req, res) => {
         res.status(500).send(`
             <h1>Erro de Build</h1>

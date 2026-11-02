@@ -1,6 +1,7 @@
-# IMPORTANTE: As variáveis abaixo ($_VITE_PARSE_APP_ID, $_VITE_PARSE_JS_KEY, $_GEMINI_API_KEY)
+# IMPORTANTE: As variáveis abaixo ($_VITE_PARSE_APP_ID, $_VITE_PARSE_JS_KEY)
 # devem ser configuradas nas "Substitution Variables" do seu Trigger no Google Cloud Build.
 # Acesse: Cloud Console → Cloud Build → Triggers → [Seu Trigger] → Edit → Substitution Variables
+# Nota: GEMINI_API_KEY foi removido do build pois é executado no Back4App Cloud Code.
 steps:
   # 1. Build da imagem Docker com argumentos do ambiente
   - name: 'gcr.io/cloud-builders/docker'
@@ -12,8 +13,6 @@ steps:
       - 'VITE_PARSE_APP_ID=$_VITE_PARSE_APP_ID'
       - '--build-arg'
       - 'VITE_PARSE_JS_KEY=$_VITE_PARSE_JS_KEY'
-      - '--build-arg'
-      - 'GEMINI_API_KEY=$_GEMINI_API_KEY'
       - '.'
 
   # 2. Push da imagem Docker para o Artifact Registry
