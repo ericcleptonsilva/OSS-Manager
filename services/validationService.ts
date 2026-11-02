@@ -79,3 +79,4 @@ export const sanitizeString = (input: string | undefined | null, maxLength = 255
     .trim()
     .slice(0, maxLength);
 };
+
