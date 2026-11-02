@@ -35,21 +35,27 @@ export const useAuth = (): UseAuthReturn => {
 
   // Sincroniza estado de autenticação a partir de Parse.User.current() caso exista sessão ativa
   useEffect(() => {
-    const user = ParseService.getCurrentUser();
-    if (user) {
-      setIsAuthenticated(true);
-      const email = user.get('email') || user.get('username') || '';
-      setCurrentUserEmail(email);
-      let role = user.get('role') as UserRole;
-      if (!role) role = 'admin';
-      setUserRole(role);
-      setCurrentUserId(user.id);
-    } else {
-      // Sem usuário logado: mantém acesso direto como admin sem barreira de login
+    try {
+      const user = ParseService.getCurrentUser();
+      if (user) {
+        setIsAuthenticated(true);
+        const email = user.get('email') || user.get('username') || '';
+        setCurrentUserEmail(email);
+        let role = user.get('role') as UserRole;
+        if (!role) role = 'admin';
+        setUserRole(role);
+        setCurrentUserId(user.id);
+      } else {
+        // Sem usuário logado: mantém acesso direto como admin sem barreira de login
+        setIsAuthenticated(true);
+        setUserRole('admin');
+        setCurrentUserId(null);
+        setCurrentUserEmail(null);
+      }
+    } catch (err) {
+      console.warn('[useAuth] Falha defensiva ao checar sessão:', err);
       setIsAuthenticated(true);
       setUserRole('admin');
-      setCurrentUserId(null);
-      setCurrentUserEmail(null);
     }
   }, []);
 

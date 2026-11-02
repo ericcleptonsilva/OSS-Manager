@@ -9,15 +9,22 @@ const PARSE_APP_ID = import.meta.env.VITE_PARSE_APP_ID;
 const PARSE_JS_KEY = import.meta.env.VITE_PARSE_JS_KEY;
 
 export const initializeParse = () => {
-  if (!PARSE_APP_ID || !PARSE_JS_KEY) {
-    const msg = "[Back4App] Credenciais ausentes! Verifique o arquivo .env (VITE_PARSE_APP_ID e VITE_PARSE_JS_KEY).";
-    console.error(msg);
-    throw new Error(msg);
+  if (PARSE_APP_ID && PARSE_JS_KEY) {
+    try {
+      Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
+      Parse.serverURL = 'https://parseapi.back4app.com/';
+      console.log('[Back4App] Parse inicializado com sucesso.');
+    } catch (err) {
+      console.warn('[Back4App] Erro na inicialização do Parse:', err);
+    }
+  } else {
+    console.warn("[Back4App] Credenciais ausentes (VITE_PARSE_APP_ID e VITE_PARSE_JS_KEY).");
   }
-  Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
-  Parse.serverURL = 'https://parseapi.back4app.com/';
-  console.log('[Back4App] Parse inicializado com sucesso.');
 };
+
+// Auto-inicializa imediatamente na importação do módulo para que CoreManager/StorageController
+// estejam prontos antes de qualquer hook ou chamada a Parse.User.current()
+initializeParse();
 
 // --- HELPERS ---
 
@@ -95,8 +102,13 @@ export const logoutUser = async () => {
   await Parse.User.logOut();
 };
 
-export const getCurrentUser = () => {
-  return Parse.User.current();
+export const getCurrentUser = (): Parse.User | null => {
+  try {
+    return Parse.User.current();
+  } catch (err) {
+    console.warn('[Back4App] Falha ao recuperar usuário atual do Storage:', err);
+    return null;
+  }
 };
 
 // Função para popular o DB com dados iniciais se estiver vazio

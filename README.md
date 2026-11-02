@@ -204,6 +204,11 @@ Acesse: **Back4App Dashboard → Database → [Classe] → Class Level Permissio
 - **Botão Novo Professor**: Implementado atalho direto para cadastrar novos instrutores vinculados a unidades.
 
 ### Interface (UI/UX)
+- **Correção Crítica: Inicialização Antecipada do Parse SDK e Proteção do Storage (Novembro 2026)**:
+  - **Issue no GitHub**: #196 resolvida e fechada.
+  - **Causa Raiz de 'async' TypeError**: Diagnosticado via Chrome DevTools Protocol no Edge Headless que `Parse.User.current()` invocava `StorageController.async` antes que o Parse SDK completasse a inicialização, provocando exceção não capturada e quebrando a montagem do React.
+  - **Inicialização Top-Level**: Invocação de `initializeParse()` no carregamento estático de `services/parseService.ts` e antes do `root.render()` em `index.tsx`.
+  - **Tratamento Defensivo**: Função `getCurrentUser()` encapsulada com `try...catch` que retorna `null` seguro caso o storage não esteja pronto.
 - **Correção de Tela em Branco e Acesso Sem Tela de Login (Novembro 2026)**:
   - **Issue no GitHub**: #195 resolvida e fechada.
   - **Eliminação de Tela em Branco**: Corrigida a condição de guarda da View 2 (`Academy Detail`) que impedia a renderização ao acessar uma academia sem credenciais ativas.

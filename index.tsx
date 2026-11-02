@@ -3,6 +3,14 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { initializeParse } from './services/parseService';
+
+// Garante inicialização do Parse antes da montagem da árvore React
+try {
+  initializeParse();
+} catch (e) {
+  console.warn('[Parse Init Warning]', e);
+}
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
