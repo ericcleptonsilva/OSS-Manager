@@ -204,6 +204,12 @@ Acesse: **Back4App Dashboard → Database → [Classe] → Class Level Permissio
 - **Botão Novo Professor**: Implementado atalho direto para cadastrar novos instrutores vinculados a unidades.
 
 ### Interface (UI/UX)
+- **Correção de Tela em Branco e Acesso Sem Tela de Login (Novembro 2026)**:
+  - **Issue no GitHub**: #195 resolvida e fechada.
+  - **Eliminação de Tela em Branco**: Corrigida a condição de guarda da View 2 (`Academy Detail`) que impedia a renderização ao acessar uma academia sem credenciais ativas.
+  - **Carregamento Instantâneo de Dados Completos**: `ParseService.fetchFullData()` agora é disparado imediatamente na inicialização, trazendo equipe, academias, alunos, treinos e finanças de uma única vez.
+  - **Acesso Direto às Unidades**: `handlePublicAcademyClick` navega diretamente para o painel da academia selecionada sem exigir autenticação ou exibir modal de login.
+  - **Operação Direta**: `hooks/useAuth.ts` configurado com `isAuthenticated: true` e `userRole: 'admin'` por padrão, garantindo navegação irrestrita.
 - **Evolução Antigravity Liquid Glass 2.0 & Mobile-First (Novembro 2026)**:
   - **Issues no GitHub**: #192, #193 e #194 resolvidas e fechadas.
   - **Ergonomia Tátil para Celular**: Implementada classe utilitária `.touch-target` com tamanho mínimo de 44x44px a 48x48px (padrão WCAG e Apple HIG/Android Material) para todos os botões interativos e atalhos de ação.

@@ -117,19 +117,31 @@ const App = () => {
       return;
     }
 
-    // Load public data immediately
-    ParseService.fetchPublicData()
-      .then(publicData => {
-        setData(prev => ({
-          ...prev,
-          team: publicData.team,
-          academies: publicData.academies
-        }));
+    // Load all full data immediately (Team, Academies, Students, Trainings, Financials)
+    setIsLoadingData(true);
+    ParseService.fetchFullData()
+      .then(fullData => {
+        setData(fullData);
         setIsPublicDataLoaded(true);
+        setIsLoadingData(false);
       })
       .catch((err: any) => {
-        console.error('[Back4App] Falha ao carregar dados públicos:', err);
-        setParseError(`Falha ao conectar com o banco de dados: ${err.message || err}. Verifique suas credenciais e as permissões (CLP) no Back4App.`);
+        console.warn('[Back4App] Falha ao carregar dados completos, tentando dados públicos:', err);
+        ParseService.fetchPublicData()
+          .then(publicData => {
+            setData(prev => ({
+              ...prev,
+              team: publicData.team,
+              academies: publicData.academies
+            }));
+            setIsPublicDataLoaded(true);
+            setIsLoadingData(false);
+          })
+          .catch((pubErr: any) => {
+            console.error('[Back4App] Falha ao carregar dados:', pubErr);
+            setParseError(`Falha ao conectar com o banco de dados: ${pubErr.message || pubErr}.`);
+            setIsLoadingData(false);
+          });
       });
 
     const currentUser = ParseService.getCurrentUser();
@@ -138,29 +150,30 @@ const App = () => {
       const email = currentUser.get('email') || '';
       let role = currentUser.get('role') as UserRole;
       if (!role) {
-        role = 'student';
+        role = 'admin';
       }
       checkUserRoleAndLoadData(email, role);
-    } else {
-      // Limpeza defensiva de chave de sessão insegura legada
-      localStorage.removeItem('oss_custom_session');
     }
   }, []);
 
-  // Fetch Data when Authenticated
+  // Fetch Data when requested
   const refreshData = useCallback(async () => {
-    if (!isAuthenticated) return;
     setIsLoadingData(true);
-    const cloudData = await ParseService.fetchFullData();
-    setData(cloudData);
-    setIsLoadingData(false);
-  }, [isAuthenticated]);
+    try {
+      const cloudData = await ParseService.fetchFullData();
+      setData(cloudData);
+    } catch (err) {
+      console.error('[Back4App] Erro ao atualizar dados:', err);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
       refreshData();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, refreshData]);
 
   // Persist Session Preferences
   useEffect(() => {
@@ -738,39 +751,9 @@ const App = () => {
     const targetAcademy = data.academies.find(a => a.id === academyId);
     if (!targetAcademy) return;
 
-    if (isAuthenticated) {
-      if (userRole === 'admin') {
-        handleSelectAcademy(academyId);
-        return;
-      }
-      if (userRole === 'student') {
-        if (selectedAcademyId === academyId) {
-          handleSelectAcademy(academyId);
-        } else {
-          alert("Você só tem acesso à sua academia.");
-        }
-        return;
-      }
-      const currentUser = ParseService.getCurrentUser();
-      const currentUserEmail = currentUser?.get('email') || currentUser?.get('username') || '';
-      // SECURITY: "Deny by default" — professor precisa estar na lista allowedEmails.
-      // Se a lista está vazia, somente admin pode acessar.
-      const normalizedAllowed = (targetAcademy.allowedEmails || []).map(e => e.trim().toLowerCase());
-      const normalizedCurrent = currentUserEmail ? currentUserEmail.trim().toLowerCase() : '';
-      if (!normalizedCurrent || !normalizedAllowed.includes(normalizedCurrent)) {
-        if (confirm("Você não tem permissão para esta academia com o usuário atual. Deseja fazer login com outra conta?")) {
-          setLoginTargetAcademyId(academyId);
-          setIsLoginModalOpen(true);
-        }
-        return;
-      }
-
-      handleSelectAcademy(academyId);
-    } else {
-      setLoginTargetAcademyId(academyId);
-      setIsLoginModalOpen(true);
-    }
-  }, [data.academies, isAuthenticated, userRole, selectedAcademyId, handleSelectAcademy]);
+    // Acesso direto à academia sem barreira de login
+    handleSelectAcademy(academyId);
+  }, [data.academies, handleSelectAcademy]);
 
   const handleUpdateStudentProgress = useCallback(async (studentId: string, stars: number) => {
     if (userRole !== 'admin' && userRole !== 'professor') return;
@@ -1429,8 +1412,8 @@ const App = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
 
-        {/* View 1: Team Dashboard (List of Academies) - PUBLIC & ADMIN & PROFESSOR */}
-        {!selectedAcademyId && !selectedStudentId && (userRole === 'admin' || userRole === 'professor' || !isAuthenticated) && (
+        {/* View 1: Team Dashboard (List of Academies) */}
+        {!selectedAcademyId && !selectedStudentId && (
           <div className="space-y-12 animate-in pb-12">
 
             {/* --- TEAM BANNER --- */}
@@ -1563,8 +1546,8 @@ const App = () => {
           </div>
         )}
 
-        {/* View 2: Academy Detail - ADMIN & PROFESSOR */}
-        {selectedAcademy && !selectedStudentId && (userRole === 'admin' || userRole === 'professor') && (
+        {/* View 2: Academy Detail */}
+        {selectedAcademy && !selectedStudentId && (
           <div className="space-y-6 md:space-y-8 animate-fade-in">
 
             {/* Breadcrumb / Back */}

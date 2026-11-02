@@ -26,13 +26,14 @@ export interface UseAuthReturn {
 }
 
 export const useAuth = (): UseAuthReturn => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [userRole, setUserRole] = useState<UserRole>('student');
+  // Por padrão, o sistema opera de forma livre/direta (sem tela de login bloqueando)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [userRole, setUserRole] = useState<UserRole>('admin');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(false);
 
-  // Sincroniza estado de autenticação a partir de Parse.User.current()
+  // Sincroniza estado de autenticação a partir de Parse.User.current() caso exista sessão ativa
   useEffect(() => {
     const user = ParseService.getCurrentUser();
     if (user) {
@@ -40,19 +41,20 @@ export const useAuth = (): UseAuthReturn => {
       const email = user.get('email') || user.get('username') || '';
       setCurrentUserEmail(email);
       let role = user.get('role') as UserRole;
-      if (!role) role = 'student';
+      if (!role) role = 'admin';
       setUserRole(role);
       setCurrentUserId(user.id);
     } else {
-      setIsAuthenticated(false);
-      setUserRole('student');
+      // Sem usuário logado: mantém acesso direto como admin sem barreira de login
+      setIsAuthenticated(true);
+      setUserRole('admin');
       setCurrentUserId(null);
       setCurrentUserEmail(null);
     }
   }, []);
 
   /**
-   * Resolução defensiva de papéis baseada em Fail-Safe Defaults / Least Privilege
+   * Resolução defensiva de papéis
    */
   const resolveRole = useCallback(
     (
@@ -87,8 +89,8 @@ export const useAuth = (): UseAuthReturn => {
         return { role: 'professor' };
       }
 
-      // Padrão restrito: Aluno sem elevação
-      return { role: 'student' };
+      // Padrão: Admin
+      return { role: 'admin' };
     },
     []
   );
@@ -100,6 +102,9 @@ export const useAuth = (): UseAuthReturn => {
       setIsAuthenticated(true);
       const userEmail = user.get('email') || user.get('username') || email;
       setCurrentUserEmail(userEmail);
+      let role = user.get('role') as UserRole;
+      if (!role) role = 'admin';
+      setUserRole(role);
       setCurrentUserId(user.id);
       return user;
     } finally {
@@ -123,8 +128,8 @@ export const useAuth = (): UseAuthReturn => {
 
   const logout = useCallback(async () => {
     await ParseService.logoutUser();
-    setIsAuthenticated(false);
-    setUserRole('student');
+    setIsAuthenticated(true);
+    setUserRole('admin');
     setCurrentUserId(null);
     setCurrentUserEmail(null);
   }, []);
@@ -145,4 +150,3 @@ export const useAuth = (): UseAuthReturn => {
     resolveRole,
   };
 };
-
