@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { INITIAL_DATA, BELT_STYLES, BELT_GROUPS, WEEKDAYS, JIU_JITSU_TECHNIQUES } from './constants';
+import { formatCPF, formatPhone } from './services/validationService';
 import { Academy, AppData, Student, BeltColor, Team, TrainingSession, TrainingMedia, AcademySchedule, TimeRange, FinancialTransaction, FinancialType } from './types';
 import { IconAcademy, IconUsers, IconPlus, IconSparkles, IconBack, IconClock, IconEdit, IconTrash, IconSettings, IconCamera, IconClipboard, IconHistory, IconCalendar, IconCheck, IconMoney, IconWallet, IconAlert, IconLogout, IconMail, IconLock, IconUser, IconUserPlus, IconShield, IconX, IconCreditCard } from './components/icons';
 import StudentFinancialCard from './components/StudentFinancialCard';
@@ -12,20 +13,32 @@ import { generateTeamAnalysis } from './services/GeminiService';
 import * as ParseService from './services/parseService';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useTheme } from './contexts/ThemeContext';
+import { useAuth } from './hooks/useAuth';
+import { UserRole } from './types';
 
 interface SessionPreferences {
   lastAcademyId?: string | null;
 }
 
-type UserRole = 'admin' | 'student' | 'professor';
-
 const App = () => {
   // --- State ---
 
-  // 0. Auth State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [userRole, setUserRole] = useState<UserRole>('student');
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // 0. Auth State (Modularizado no hook useAuth)
+  const {
+    isAuthenticated,
+    userRole,
+    currentUserId,
+    isLoadingAuth,
+    setIsAuthenticated,
+    setUserRole,
+    setCurrentUserId,
+    setIsLoadingAuth,
+    login,
+    register,
+    logout,
+    resolveRole,
+  } = useAuth();
+
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isPublicDataLoaded, setIsPublicDataLoaded] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
@@ -34,7 +47,6 @@ const App = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [registerName, setRegisterName] = useState('');
   const [isRegisterMode, setIsRegisterMode] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(false);
 
   // 1. Data State
   const [data, setData] = useState<AppData>(INITIAL_DATA);
@@ -197,46 +209,23 @@ const App = () => {
     const fetchedData = await ParseService.fetchFullData();
     setData(fetchedData);
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const resolved = resolveRole(email, explicitRole, fetchedData.team, fetchedData.professors, fetchedData.students);
+    setUserRole(resolved.role);
 
-    // SECURITY: Role assignment is strictly based on the authenticated role from the server.
-    // No hardcoded email overrides allowed.
-    if (explicitRole === 'admin') {
-      setUserRole('admin');
+    if (resolved.role === 'admin') {
       setCurrentUserId(null);
       showNotification(`Bem-vindo, Admin!`);
-    } else if (explicitRole === 'professor') {
-      // Se for um professor logando (explicitRole vindo do login do professor)
-      setUserRole('professor');
+    } else if (resolved.role === 'professor') {
       setCurrentUserId(null);
       showNotification(`Bem-vindo, Professor!`);
+    } else if (resolved.student) {
+      setCurrentUserId(resolved.student.id);
+      setSelectedAcademyId(resolved.student.academyId);
+      setSelectedStudentId(resolved.student.id);
+      showNotification(`Bem-vindo, ${resolved.student.name.split(' ')[0]}!`);
     } else {
-      // 1. Verifique se é um aluno (Correspondência por E-MAIL)
-      const studentFound = fetchedData.students.find(s => s.email.toLowerCase() === normalizedEmail);
-
-      if (studentFound) {
-        setUserRole('student');
-        setCurrentUserId(studentFound.id);
-        setSelectedAcademyId(studentFound.academyId);
-        setSelectedStudentId(studentFound.id);
-        showNotification(`Bem-vindo, ${studentFound.name.split(' ')[0]}!`);
-      } else {
-        // Fallback defensivo e seguro (Fail-Safe Defaults / Least Privilege)
-        if (fetchedData.team.adminEmail && fetchedData.team.adminEmail.trim().toLowerCase() === normalizedEmail) {
-          setUserRole('admin');
-          setCurrentUserId(null);
-          showNotification(`Bem-vindo, Admin!`);
-        } else if (fetchedData.professors.some(p => p.email.trim().toLowerCase() === normalizedEmail)) {
-          setUserRole('professor');
-          setCurrentUserId(null);
-          showNotification(`Bem-vindo, Professor!`);
-        } else {
-          // Mantém estritamente como student (não eleva privilégios para admin sem autorização)
-          setUserRole('student');
-          setCurrentUserId(null);
-          showNotification(`Bem-vindo! Solicite ao seu professor a vinculação do perfil.`);
-        }
-      }
+      setCurrentUserId(null);
+      showNotification(`Bem-vindo! Solicite ao seu professor a vinculação do perfil.`);
     }
     return fetchedData;
   };
@@ -247,8 +236,8 @@ const App = () => {
     setIsLoadingAuth(true);
 
     try {
-      // Fluxo de Login Customizado (Parse User OU Team Admin OU Academy Professor)
-      const user = await ParseService.performCustomLogin(loginEmail, loginPassword);
+      // Autenticação via useAuth hook
+      const user = await login(loginEmail, loginPassword);
 
       let role = user.get('role') as UserRole;
       if (!role) {
@@ -303,7 +292,7 @@ const App = () => {
         throw new Error('Email não cadastrado. Entre em contato com seu professor para ser adicionado antes de criar uma conta.');
       }
 
-      const user = await ParseService.registerUser(registerName, loginEmail, loginPassword);
+      const user = await register(registerName, loginEmail, loginPassword);
       showNotification('Conta criada com sucesso! Bem-vindo.');
 
       setIsAuthenticated(true);
@@ -331,11 +320,8 @@ const App = () => {
   };
 
   const handleLogout = async () => {
-    await ParseService.logoutUser();
+    await logout();
     localStorage.removeItem('oss_custom_session'); // Limpeza defensiva
-    setIsAuthenticated(false);
-    setUserRole('student');
-    setCurrentUserId(null);
     setSelectedAcademyId(null);
     setSelectedStudentId(null);
     setLoginEmail('');
@@ -915,8 +901,8 @@ const App = () => {
       setNewStudent({ belt: BeltColor.WHITE, degrees: 0 });
       setIsStudentModalOpen(false);
       showNotification('Aluno salvo com sucesso!');
-    } catch (e) {
-      alert("Erro ao salvar aluno.");
+    } catch (e: any) {
+      showNotification(e.message || "Erro ao salvar aluno.", 'error');
       console.error(e);
     }
   };
@@ -3147,7 +3133,7 @@ const App = () => {
                 type="tel"
                 className="w-full rounded-lg border-gray-300 border p-3 min-h-[48px] focus:ring-2 focus:ring-jiu-primary focus:border-transparent outline-none transition-all bg-white/50 dark:bg-slate-800 text-slate-900 dark:text-white dark:border-slate-600 focus:ring-jiu-primary dark:focus:ring-jiu-primary/50"
                 value={newStudent.phone || ''}
-                onChange={e => setNewStudent({ ...newStudent, phone: e.target.value })}
+                onChange={e => setNewStudent({ ...newStudent, phone: formatPhone(e.target.value) })}
               />
             </div>
           </div>
@@ -3176,7 +3162,7 @@ const App = () => {
                     placeholder="(00) 00000-0000"
                     className="w-full rounded border-yellow-300 border p-2 text-sm text-gray-900 placeholder-gray-500 focus:ring-1 focus:ring-yellow-500 bg-white"
                     value={newStudent.guardianPhone || ''}
-                    onChange={e => setNewStudent({ ...newStudent, guardianPhone: e.target.value })}
+                    onChange={e => setNewStudent({ ...newStudent, guardianPhone: formatPhone(e.target.value) })}
                   />
                 </div>
                 <div>
@@ -3186,7 +3172,7 @@ const App = () => {
                     placeholder="000.000.000-00"
                     className="w-full rounded border-yellow-300 border p-2 text-sm text-gray-900 placeholder-gray-500 focus:ring-1 focus:ring-yellow-500 bg-white"
                     value={newStudent.guardianCpf || ''}
-                    onChange={e => setNewStudent({ ...newStudent, guardianCpf: e.target.value })}
+                    onChange={e => setNewStudent({ ...newStudent, guardianCpf: formatCPF(e.target.value) })}
                   />
                 </div>
               </div>

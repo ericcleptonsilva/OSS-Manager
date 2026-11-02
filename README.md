@@ -41,6 +41,15 @@ Foi realizada uma auditoria completa de segurança no repositório cobrindo SAST
 - **Modelagem de Ameaças**: Elaborados frameworks formais STRIDE e PASTA para a arquitetura completa do OSS-Manager (SPA React, Express Host, Parse SDK e Cloud Code no Back4App).
 - **Hardening de Segredos**: Confirmada a ausência de segredos ou credenciais em texto claro no repositório.
 
+### 🛡️ Hardening Avançado e Modularização
+- **[#189](https://github.com/ericcleptonsilva/OSS-Manager/issues/189) — SEC-07: [ENHANCEMENT] Rate Limiting defensivo no Express (`server.js`)**:
+  - Implementado limitador em memória com janela deslizante de 1 minuto e limite de 180 req/min por IP. Responde com código HTTP 429 Too Many Requests, cabeçalhos `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining` e rotina periódica de liberação de memória.
+- **[#190](https://github.com/ericcleptonsilva/OSS-Manager/issues/190) — SEC-08: [ENHANCEMENT] Sanitização e validação de dados cadastrais (`validationService.ts`)**:
+  - Adicionada validação matemática de dígitos verificadores de CPF (módulo 11), máscaras automáticas em inputs (CPF e telefone) e sanitização de texto antes da persistência no Parse SDK.
+- **[#191](https://github.com/ericcleptonsilva/OSS-Manager/issues/191) — REFACTOR-01: [ENHANCEMENT] Modularização do ciclo de autenticação e RBAC (`useAuth.ts`)**:
+  - Extraído hook `hooks/useAuth.ts` isolando as operações de login, cadastro, logout e resolução de papéis defensiva (Fail-Safe Defaults), desacoplando a lógica do `App.tsx`.
+
+
 ## 🛠️ Log de Alterações Recentes (Agosto 2026)
 
 ### 🛡️ Correção Completa de Vulnerabilidades & Hardening de Autenticação

@@ -33,6 +33,8 @@ export enum FinancialType {
   OTHER = 'Outro'
 }
 
+export type UserRole = 'admin' | 'student' | 'professor';
+
 export interface TrainingMedia {
   type: 'image' | 'video';
   data: string; // Base64

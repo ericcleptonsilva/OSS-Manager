@@ -2,6 +2,7 @@
 import Parse from 'parse';
 import { AppData, Academy, Student, TrainingSession, FinancialTransaction, Team, BeltColor, Professor } from '../types';
 import { INITIAL_DATA } from '../constants';
+import { validateCPF, formatCPF, validateEmail, formatPhone, sanitizeString } from './validationService';
 
 // --- CONFIGURAÇÃO ---
 const PARSE_APP_ID = import.meta.env.VITE_PARSE_APP_ID;
@@ -309,9 +310,28 @@ export const saveStudent = async (studentData: Partial<Student>) => {
     student.id = studentData.id;
   }
 
-  student.set('name', studentData.name);
-  student.set('email', studentData.email);
-  student.set('phone', studentData.phone);
+  const sanitizedName = sanitizeString(studentData.name, 100);
+  const sanitizedEmail = (studentData.email || '').trim().toLowerCase();
+  
+  if (sanitizedEmail && !validateEmail(sanitizedEmail)) {
+    throw new Error('E-mail informado possui formato inválido.');
+  }
+
+  let formattedCpf = '';
+  if (studentData.guardianCpf && studentData.guardianCpf.trim()) {
+    const rawCpf = studentData.guardianCpf.trim();
+    if (!validateCPF(rawCpf)) {
+      throw new Error('CPF do responsável inválido (falha na validação de dígitos verificadores).');
+    }
+    formattedCpf = formatCPF(rawCpf);
+  }
+
+  const formattedPhone = studentData.phone ? formatPhone(studentData.phone) : '';
+  const formattedGuardianPhone = studentData.guardianPhone ? formatPhone(studentData.guardianPhone) : '';
+
+  student.set('name', sanitizedName);
+  student.set('email', sanitizedEmail);
+  student.set('phone', formattedPhone);
   student.set('birthDate', studentData.birthDate);
   student.set('startDate', studentData.startDate);
   student.set('belt', studentData.belt);
@@ -320,9 +340,9 @@ export const saveStudent = async (studentData: Partial<Student>) => {
   // Senhas agora são gerenciadas nativamente via Parse.User e não em texto simples no objeto Student.
   // if (studentData.password) student.set('password', studentData.password);
   if (studentData.progressStars !== undefined) student.set('progressStars', studentData.progressStars);
-  student.set('guardianName', studentData.guardianName);
-  student.set('guardianPhone', studentData.guardianPhone);
-  student.set('guardianCpf', studentData.guardianCpf);
+  student.set('guardianName', sanitizeString(studentData.guardianName, 100));
+  student.set('guardianPhone', formattedGuardianPhone);
+  student.set('guardianCpf', formattedCpf || studentData.guardianCpf);
 
   // Pointer to Academy
   if (studentData.academyId) {
@@ -344,14 +364,17 @@ export const saveAcademy = async (academyData: Partial<Academy>) => {
     academy.id = academyData.id;
   }
 
-  academy.set('name', academyData.name);
-  academy.set('address', academyData.address);
-  academy.set('instructorName', academyData.instructorName);
-  academy.set('description', academyData.description);
+  academy.set('name', sanitizeString(academyData.name, 100));
+  academy.set('address', sanitizeString(academyData.address, 200));
+  academy.set('instructorName', sanitizeString(academyData.instructorName, 100));
+  academy.set('description', sanitizeString(academyData.description, 500));
   academy.set('logo', academyData.logo);
   academy.set('schedule', academyData.schedule);
   if (academyData.allowedEmails) {
-    academy.set('allowedEmails', academyData.allowedEmails);
+    const cleanedEmails = academyData.allowedEmails
+      .map(e => e.trim().toLowerCase())
+      .filter(e => validateEmail(e));
+    academy.set('allowedEmails', cleanedEmails);
   }
   // adminPassword não é mais salvo em texto simples por segurança.
 
@@ -453,8 +476,8 @@ export const saveTeam = async (teamData: Partial<Team>) => {
     }
   }
 
-  team.set('name', teamData.name);
-  team.set('description', teamData.description);
+  team.set('name', sanitizeString(teamData.name, 100));
+  team.set('description', sanitizeString(teamData.description, 500));
   if (teamData.logo) {
     team.set('logo', teamData.logo);
   }
@@ -462,7 +485,11 @@ export const saveTeam = async (teamData: Partial<Team>) => {
     team.set('banner', teamData.banner);
   }
   if (teamData.adminEmail) {
-    team.set('adminEmail', teamData.adminEmail);
+    const cleanAdminEmail = teamData.adminEmail.trim().toLowerCase();
+    if (!validateEmail(cleanAdminEmail)) {
+      throw new Error('E-mail do administrador da equipe possui formato inválido.');
+    }
+    team.set('adminEmail', cleanAdminEmail);
   }
   // adminPassword não é mais salvo em texto simples por segurança.
 

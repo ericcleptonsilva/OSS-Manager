@@ -13,6 +13,58 @@ const PORT = process.env.PORT || 8080;
 // Oculta cabeçalho de tecnologia do Express (Evita Information Disclosure / Fingerprinting)
 app.disable('x-powered-by');
 
+// --- RATE LIMITING DEFENSIVO (Sliding Window In-Memory) ---
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto
+const RATE_LIMIT_MAX_REQUESTS = 180; // Limite de 180 requisições por minuto por IP
+const ipRequestMap = new Map();
+
+// Limpeza periódica para prevenir vazamento de memória (executa a cada 5 minutos)
+const cleanupInterval = setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of ipRequestMap.entries()) {
+    if (now - data.resetTime > RATE_LIMIT_WINDOW_MS) {
+      ipRequestMap.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+cleanupInterval.unref(); // Não impede o término do processo se necessário
+
+const rateLimiter = (req, res, next) => {
+  const forwarded = req.headers['x-forwarded-for'];
+  const clientIp = (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : '') || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+
+  let record = ipRequestMap.get(clientIp);
+  if (!record || (now - record.resetTime > RATE_LIMIT_WINDOW_MS)) {
+    record = { count: 1, resetTime: now };
+    ipRequestMap.set(clientIp, record);
+  } else {
+    record.count++;
+  }
+
+  res.setHeader('RateLimit-Limit', RATE_LIMIT_MAX_REQUESTS);
+  res.setHeader('RateLimit-Remaining', Math.max(0, RATE_LIMIT_MAX_REQUESTS - record.count));
+
+  if (record.count > RATE_LIMIT_MAX_REQUESTS) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((record.resetTime + RATE_LIMIT_WINDOW_MS - now) / 1000));
+    res.setHeader('Retry-After', retryAfterSeconds);
+    return res.status(429).send(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head><meta charset="utf-8"><title>429 - Limite Excedido</title></head>
+      <body style="font-family:system-ui,-apple-system,sans-serif;text-align:center;padding:50px;background:#0f172a;color:#f8fafc;">
+        <h2>429 — Muitas Requisições</h2>
+        <p>Limite defensivo de requisições atingido para este IP.</p>
+        <p>Por favor, aguarde <b>${retryAfterSeconds} segundos</b> antes de recarregar.</p>
+      </body>
+      </html>
+    `);
+  }
+  next();
+};
+
+app.use(rateLimiter);
+
 // --- SECURITY HEADERS ---
 app.use((req, res, next) => {
   // Previne clickjacking
