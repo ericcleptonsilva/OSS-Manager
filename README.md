@@ -36,6 +36,11 @@ Foi realizada uma auditoria completa de segurança no repositório cobrindo SAST
   - *Problema*: `npm audit` detectou 27 vulnerabilidades (incluindo crítica em `proxy-addr` e 11 de alta severidade). Polyfills do Vite carregavam `vm-browserify` com uso de `eval`.
   - *Correção*: Executado `npm audit fix` (reduzindo vulnerabilidades de 27 para 10 sem breaking changes) e restritos polyfills do Vite (`['buffer', 'events', 'process']`), eliminando o uso de `eval` e reduzindo o tamanho do bundle JS de **1,95 MB para 1,01 MB** (-48%).
 
+### 🕵️ Auditoria e Threat Model 007 (Workflow `/007`)
+- **Zero Trust & Supply Chain**: Fixadas 100% das dependências em `package.json` para versões exatas (sem wildcards `^` ou `~`), alcançando nota máxima (100/100) no scanner de Supply Chain do 007.
+- **Modelagem de Ameaças**: Elaborados frameworks formais STRIDE e PASTA para a arquitetura completa do OSS-Manager (SPA React, Express Host, Parse SDK e Cloud Code no Back4App).
+- **Hardening de Segredos**: Confirmada a ausência de segredos ou credenciais em texto claro no repositório.
+
 ## 🛠️ Log de Alterações Recentes (Agosto 2026)
 
 ### 🛡️ Correção Completa de Vulnerabilidades & Hardening de Autenticação
